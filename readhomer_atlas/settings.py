@@ -127,6 +127,7 @@ INSTALLED_APPS = [
     # third party
     "corsheaders",
     "django_extensions",
+    "graphene_django",
     # project
     "readhomer_atlas",
     "readhomer_atlas.library",
@@ -165,3 +166,10 @@ FIXTURE_DIRS = [os.path.join(PROJECT_ROOT, "fixtures")]
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
 CORS_ORIGIN_ALLOW_ALL = True
+
+GRAPHENE = {
+    "SCHEMA": "readhomer_atlas.schema.schema",
+    # setting RELAY_CONNECTION_MAX_LIMIT to None removes the limit; for backwards compatability with current API
+    # @@@ restore the limit
+    "RELAY_CONNECTION_MAX_LIMIT": None,
+}
