@@ -1,0 +1,7 @@
+*.pyc
+dev.db
+site_media/
+.DS_Store
+.vscode
+Pipfile
+Pipfile.lock
