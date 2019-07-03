@@ -28,3 +28,19 @@ Run the Django dev server:
 ```
 
 Browse to http://localhost:8000/
+
+## Loading data
+
+Create a superuser:
+
+```
+./manage.py createsuperuser
+```
+
+Add the initial library fixture:
+
+```
+./manage.py loaddata library_data
+```
+
+Browse to `/admin/library/`
