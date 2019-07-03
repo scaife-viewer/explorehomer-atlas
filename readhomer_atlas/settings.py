@@ -102,6 +102,7 @@ TEMPLATES = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -123,6 +124,8 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.sessions",
     "django.contrib.sites",
+    # override runserver static handling
+    "whitenoise.runserver_nostatic",
     "django.contrib.staticfiles",
     # third party
     "corsheaders",
