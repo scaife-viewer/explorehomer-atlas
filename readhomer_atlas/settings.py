@@ -124,6 +124,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     # project
     "readhomer_atlas",
+    "readhomer_atlas.library",
 ]
 
 ADMIN_URL = "admin:index"
