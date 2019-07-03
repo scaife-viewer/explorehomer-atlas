@@ -7,13 +7,15 @@ PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir
 PACKAGE_ROOT = os.path.abspath(os.path.dirname(__file__))
 BASE_DIR = PACKAGE_ROOT
 
-DEBUG = True
+DEBUG = bool(int(os.environ.get("DEBUG", "1")))
 
 DATABASES = {
     "default": dj_database_url.config(default="postgres://localhost/readhomer_atlas")
 }
 
 ALLOWED_HOSTS = ["localhost"]
+if "HEROKU_APP_NAME" in os.environ:
+    ALLOWED_HOSTS = ["*"]
 
 # Local time zone for this installation. Choices can be found here:
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
@@ -72,8 +74,12 @@ STATICFILES_FINDERS = [
     "django.contrib.staticfiles.finders.AppDirectoriesFinder",
 ]
 
-# Make this unique, and don't share it with anybody.
-SECRET_KEY = "3#l*7k&+=w-z7uc@^78#w*3(u44%sgyt4#d2lye#7_98qk5j_n"
+# Secret key
+if DEBUG:
+    SECRET_KEY = "3#l*7k&+=w-z7uc@^78#w*3(u44%sgyt4#d2lye#7_98qk5j_n"
+else:
+    # Will raise a KeyError if SECRET_KEY env var is not defined
+    SECRET_KEY = os.environ["SECRET_KEY"]
 
 TEMPLATES = [
     {
@@ -98,6 +104,7 @@ TEMPLATES = [
 ]
 
 MIDDLEWARE = [
+    "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
