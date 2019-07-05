@@ -1,0 +1,22 @@
+{
+  "versions": [
+    {
+      "urn": "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2",
+      "content_path": "tlg0012.tlg001.perseus-grc2.txt",
+      "metadata": {
+        "work_title": "Iliad",
+        "work_urn": "urn:cts:greekLit:tlg0012.tlg001",
+        "type": "edition"
+      }
+    },
+    {
+      "urn": "urn:cts:greekLit:tlg0012.tlg002.perseus-grc2",
+      "content_path": "tlg0012.tlg002.perseus-grc2.txt",
+      "metadata": {
+        "work_title": "Odyssey",
+        "work_urn": "urn:cts:greekLit:tlg0012.tlg002",
+        "type": "edition"
+      }
+    }
+  ]
+}

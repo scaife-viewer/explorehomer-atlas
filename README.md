@@ -37,10 +37,10 @@ Create a superuser:
 ./manage.py createsuperuser
 ```
 
-Add the initial library fixture:
+Run the `import_versions` script:
 
 ```
-./manage.py loaddata library_data
+python manage.py shell -c 'from readhomer_atlas.library.importers import import_versions; import_versions;'
 ```
 
 Browse to `/admin/library/`
