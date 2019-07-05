@@ -91,7 +91,15 @@ class AlignmentChunkNode(DjangoObjectType):
     class Meta:
         model = AlignmentChunk
         interfaces = (relay.Node,)
-        filter_fields = ["start", "end"]
+        filter_fields = [
+            "start",
+            "end",
+            "start__book__position",
+            "start__position",
+            "end__book__position",
+            "end__position",
+            "version__urn",
+        ]
 
 
 class Query(ObjectType):
@@ -103,3 +111,6 @@ class Query(ObjectType):
 
     line = relay.Node.Field(LineNode)
     lines = LimitedConnectionField(LineNode)
+
+    alignment_chunk = relay.Node.Field(AlignmentChunkNode)
+    alignment_chunks = LimitedConnectionField(AlignmentChunkNode)

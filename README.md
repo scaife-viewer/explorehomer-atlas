@@ -142,3 +142,57 @@ and then the next ten lines after that (using the `endCursor` value for `after` 
   }
 }
 ```
+
+## Translation Alignments
+
+### Sample Queries
+
+Get alignment chunks for a given line:
+```
+{
+  lines(version_Urn: "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2", book_Position: 1, position: 8) {
+    edges {
+      cursor
+      node {
+        id
+        label
+        textContent
+        alignmentChunks {
+          edges {
+            node {
+              id
+              items
+              alignment {
+                name
+              }
+            }
+          }
+        }
+      }
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+  }
+}
+```
+
+Get alignment chunks for a given range:
+```
+{
+  alignmentChunks(version_Urn: "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2", start_Book_Position: 1, start_Position: 8) {
+    edges {
+      cursor
+      node {
+        id
+        citation
+        items
+        alignment {
+          name
+        }
+      }
+    }
+  }
+}
+```
