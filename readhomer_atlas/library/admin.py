@@ -1,12 +1,20 @@
 from django.contrib import admin
 
-from .models import Version, Book, Line
+from .models import Book, Line, Version, VersionAlignment
 
 
 @admin.register(Version)
 class VersionAdmin(admin.ModelAdmin):
     list_display = ("id", "urn", "name", "metadata")
     search_fields = ("name",)
+
+
+@admin.register(VersionAlignment)
+class VersionAlignmentAdmin(admin.ModelAdmin):
+    list_display = ("id", "name", "slug", "metadata", "version")
+    list_filter = ("version",)
+    search_fields = ("name", "slug")
+    prepopulated_fields = {"slug": ["name"]}
 
 
 @admin.register(Book)

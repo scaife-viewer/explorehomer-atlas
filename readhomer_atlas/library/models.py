@@ -25,6 +25,15 @@ class Version(models.Model):
         return self.name
 
 
+class VersionAlignment(models.Model):
+    name = models.CharField(blank=True, null=True, max_length=255)
+    slug = models.SlugField()
+    metadata = JSONField(encoder="", default=dict, blank=True)
+
+    version = models.ForeignKey(
+        "library.Version", related_name="alignments", on_delete=models.CASCADE
+    )
+
 class Book(models.Model):
     """
     urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1
