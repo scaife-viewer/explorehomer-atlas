@@ -3,7 +3,7 @@ from graphene.types import generic
 from graphene_django import DjangoObjectType
 from graphene_django.filter import DjangoFilterConnectionField
 
-from .models import Book, Line, Version
+from .models import AlignmentChunk, Book, Line, Version, VersionAlignment
 
 
 class LimitedConnectionField(DjangoFilterConnectionField):
@@ -68,11 +68,30 @@ class BookNode(DjangoObjectType):
 
 class LineNode(DjangoObjectType):
     label = String()
+    alignment_chunks = LimitedConnectionField(lambda: AlignmentChunkNode)
 
     class Meta:
         model = Line
         interfaces = (relay.Node,)
-        filter_fields = ["book__position", "version__urn"]
+        filter_fields = ["position", "book__position", "version__urn"]
+
+
+class VersionAlignmentNode(DjangoObjectType):
+    metadata = generic.GenericScalar()
+
+    class Meta:
+        model = VersionAlignment
+        interfaces = (relay.Node,)
+        filter_fields = ["name", "slug"]
+
+
+class AlignmentChunkNode(DjangoObjectType):
+    items = generic.GenericScalar()
+
+    class Meta:
+        model = AlignmentChunk
+        interfaces = (relay.Node,)
+        filter_fields = ["start", "end"]
 
 
 class Query(ObjectType):
