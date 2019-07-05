@@ -19,3 +19,4 @@ class BookAdmin(admin.ModelAdmin):
 class LineAdmin(admin.ModelAdmin):
     list_display = ("id", "text_content", "position", "idx", "book", "version")
     list_filter = ("book", "version")
+    raw_id_fields = ("book", "version")
