@@ -1,5 +1,15 @@
 [
 {
+  "model": "library.versionalignment",
+  "pk": 1,
+  "fields": {
+    "name": "Iliad (English)",
+    "slug": "iliad-english",
+    "metadata": {},
+    "version": 11
+  }
+},
+{
   "model": "library.alignmentchunk",
   "pk": 1,
   "fields": {

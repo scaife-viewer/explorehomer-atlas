@@ -145,6 +145,11 @@ and then the next ten lines after that (using the `endCursor` value for `after` 
 
 ## Translation Alignments
 
+### Load sample data
+```
+./manage.py loaddata alignment_data
+```
+
 ### Sample Queries
 
 Get alignment chunks for a given line:
