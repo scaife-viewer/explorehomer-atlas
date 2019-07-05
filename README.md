@@ -102,3 +102,43 @@ Retrieve lines within a book within a particular version:
   }
 }
 ```
+
+Page through a version ten lines at a time:
+```
+{
+  lines(version_Urn: "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2", first:10) {
+    edges {
+      cursor
+      node {
+        id
+        label
+        textContent
+      }
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+  }
+}
+```
+
+and then the next ten lines after that (using the `endCursor` value for `after` )
+```
+{
+  lines(version_Urn: "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2", first:10, after: "YXJyYXljb25uZWN0aW9uOjk=") {
+    edges {
+      cursor
+      node {
+        id
+        label
+        textContent
+      }
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+  }
+}
+```
