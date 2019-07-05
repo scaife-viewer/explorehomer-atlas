@@ -18,11 +18,10 @@ def _prepare_line_obj(version_obj, book_lookup, book_idx, line, line_idx):
     book_obj = book_lookup.get(book_ref)
     if book_obj is None:
         book_obj, _ = Book.objects.get_or_create(
-            version=version_obj, defaults=dict(position=int(book_ref), idx=book_idx)
+            version=version_obj, position=int(book_ref), idx=book_idx
         )
         book_lookup[book_ref] = book_obj
         book_idx += 1
-
     return Line(
         text_content=tokens,
         position=int(line_ref),
