@@ -34,6 +34,39 @@ class VersionAlignment(models.Model):
         "library.Version", related_name="alignments", on_delete=models.CASCADE
     )
 
+    def __str__(self):
+        return self.name
+
+
+class AlignmentChunk(models.Model):
+    # denormed from start / end
+    citation = models.CharField(max_length=13)
+    items = JSONField(encoder="", default=list, blank=True)
+    metadata = JSONField(encoder="", default=dict, blank=True)
+    idx = models.IntegerField(help_text="0-based index")
+
+    version = models.ForeignKey(
+        "library.Version", related_name="alignment_chunks", on_delete=models.CASCADE
+    )
+    alignment = models.ForeignKey(
+        "library.VersionAlignment",
+        related_name="alignment_chunks",
+        on_delete=models.CASCADE,
+    )
+    start = models.ForeignKey(
+        "library.Line", related_name="+", on_delete=models.CASCADE
+    )
+    end = models.ForeignKey("library.Line", related_name="+", on_delete=models.CASCADE)
+    # denormed from start/end
+    contains = models.ManyToManyField("library.Line", related_name="alignment_chunks")
+
+    class Meta:
+        ordering = ["idx"]
+
+    def __str__(self):
+        return f"{self.version} || {self.alignment} [citation={self.citation}]"
+
+
 class Book(models.Model):
     """
     urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1
