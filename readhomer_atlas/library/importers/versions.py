@@ -3,7 +3,7 @@ import os
 
 from django.conf import settings
 
-from .models import Book, Line, Version
+from ..models import Book, Line, Version
 
 
 LIBRARY_DATA_PATH = os.path.join(settings.PROJECT_ROOT, "data", "library")
