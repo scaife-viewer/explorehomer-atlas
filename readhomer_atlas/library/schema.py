@@ -1,3 +1,6 @@
+from django.db.models import Q
+
+import django_filters
 from graphene import ObjectType, String, relay
 from graphene.types import generic
 from graphene_django import DjangoObjectType
@@ -30,7 +33,6 @@ class LimitedConnectionField(DjangoFilterConnectionField):
         last = resolver_kwargs.get("last")
         if not first and not last:
             resolver_kwargs["first"] = max_limit
-
         return super(LimitedConnectionField, cls).connection_resolver(
             resolver,
             connection,
@@ -85,13 +87,12 @@ class VersionAlignmentNode(DjangoObjectType):
         filter_fields = ["name", "slug"]
 
 
-class AlignmentChunkNode(DjangoObjectType):
-    items = generic.GenericScalar()
+class AlignmentChunkFilterSet(django_filters.FilterSet):
+    reference = django_filters.CharFilter(method="reference_filter")
 
     class Meta:
         model = AlignmentChunk
-        interfaces = (relay.Node,)
-        filter_fields = [
+        fields = [
             "start",
             "end",
             "start__book__position",
@@ -100,6 +101,33 @@ class AlignmentChunkNode(DjangoObjectType):
             "end__position",
             "version__urn",
         ]
+
+    def reference_filter(self, queryset, name, value):
+        try:
+            start, end = value.split("-")
+        except ValueError:
+            start = end = value
+        # @@@ further validation required
+        start_book, start_line = start.split(".")
+        end_book, end_line = end.split(".")
+        subquery = Line.objects.filter(
+            Q(book__position=start_book, position=start_line)
+            | Q(book__position=end_book, position=end_line)
+        ).distinct("idx")
+        return queryset.filter(contains__in=subquery)
+
+
+class AlignmentChunkNode(DjangoObjectType):
+    items = generic.GenericScalar()
+
+    class Meta:
+        model = AlignmentChunk
+        interfaces = (relay.Node,)
+        # @@@ fake out filterclass instantiation until next graphene-django release
+        filter_fields = {}
+        # @@@ graphne-django master implements a `filterset_class`
+        # arg uses in place of `filter_fields`
+        # filterset_class = AlignmentChunkFilterSet
 
 
 class Query(ObjectType):
@@ -113,4 +141,6 @@ class Query(ObjectType):
     lines = LimitedConnectionField(LineNode)
 
     alignment_chunk = relay.Node.Field(AlignmentChunkNode)
-    alignment_chunks = LimitedConnectionField(AlignmentChunkNode)
+    alignment_chunks = LimitedConnectionField(
+        AlignmentChunkNode, filterset_class=AlignmentChunkFilterSet
+    )
