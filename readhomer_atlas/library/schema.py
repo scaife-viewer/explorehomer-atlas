@@ -114,7 +114,7 @@ class AlignmentChunkFilterSet(django_filters.FilterSet):
             Q(book__position=start_book, position=start_line)
             | Q(book__position=end_book, position=end_line)
         ).distinct("idx")
-        return queryset.filter(contains__in=subquery)
+        return queryset.filter(contains__in=subquery).distinct("idx")
 
 
 class AlignmentChunkNode(DjangoObjectType):
