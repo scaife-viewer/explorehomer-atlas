@@ -1,22 +1,21 @@
 import os
 
+import dj_database_url
+
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 PACKAGE_ROOT = os.path.abspath(os.path.dirname(__file__))
 BASE_DIR = PACKAGE_ROOT
 
-DEBUG = True
+DEBUG = bool(int(os.environ.get("DEBUG", "1")))
 
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": "dev.db",
-    }
+    "default": dj_database_url.config(default="postgres://localhost/readhomer_atlas")
 }
 
-ALLOWED_HOSTS = [
-    "localhost",
-]
+ALLOWED_HOSTS = ["localhost"]
+if "HEROKU_APP_NAME" in os.environ:
+    ALLOWED_HOSTS = ["*"]
 
 # Local time zone for this installation. Choices can be found here:
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
@@ -63,11 +62,6 @@ STATIC_ROOT = os.path.join(PACKAGE_ROOT, "site_media", "static")
 # Example: "http://media.lawrence.com/static/"
 STATIC_URL = "/site_media/static/"
 
-# Additional locations of static files
-STATICFILES_DIRS = [
-    os.path.join(PROJECT_ROOT, "static", "dist"),
-]
-
 STATICFILES_STORAGE = "django.contrib.staticfiles.storage.StaticFilesStorage"
 
 # List of finder classes that know how to find static files in
@@ -77,15 +71,17 @@ STATICFILES_FINDERS = [
     "django.contrib.staticfiles.finders.AppDirectoriesFinder",
 ]
 
-# Make this unique, and don't share it with anybody.
-SECRET_KEY = "3#l*7k&+=w-z7uc@^78#w*3(u44%sgyt4#d2lye#7_98qk5j_n"
+# Secret key
+if DEBUG:
+    SECRET_KEY = "3#l*7k&+=w-z7uc@^78#w*3(u44%sgyt4#d2lye#7_98qk5j_n"
+else:
+    # Will raise a KeyError if SECRET_KEY env var is not defined
+    SECRET_KEY = os.environ["SECRET_KEY"]
 
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [
-            os.path.join(PACKAGE_ROOT, "templates"),
-        ],
+        "DIRS": [os.path.join(PACKAGE_ROOT, "templates")],
         "APP_DIRS": True,
         "OPTIONS": {
             "debug": DEBUG,
@@ -98,13 +94,14 @@ TEMPLATES = [
                 "django.template.context_processors.tz",
                 "django.template.context_processors.request",
                 "django.contrib.messages.context_processors.messages",
-                "readhomer_atlas.context_processors.settings"
+                "readhomer_atlas.context_processors.settings",
             ],
         },
-    },
+    }
 ]
 
 MIDDLEWARE = [
+    "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -125,7 +122,6 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.sites",
     "django.contrib.staticfiles",
-
     # project
     "readhomer_atlas",
 ]
@@ -141,16 +137,12 @@ CONTACT_EMAIL = "support@example.com"
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
-    "filters": {
-        "require_debug_false": {
-            "()": "django.utils.log.RequireDebugFalse"
-        }
-    },
+    "filters": {"require_debug_false": {"()": "django.utils.log.RequireDebugFalse"}},
     "handlers": {
         "mail_admins": {
             "level": "ERROR",
             "filters": ["require_debug_false"],
-            "class": "django.utils.log.AdminEmailHandler"
+            "class": "django.utils.log.AdminEmailHandler",
         }
     },
     "loggers": {
@@ -158,12 +150,10 @@ LOGGING = {
             "handlers": ["mail_admins"],
             "level": "ERROR",
             "propagate": True,
-        },
-    }
+        }
+    },
 }
 
-FIXTURE_DIRS = [
-    os.path.join(PROJECT_ROOT, "fixtures"),
-]
+FIXTURE_DIRS = [os.path.join(PROJECT_ROOT, "fixtures")]
 
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"

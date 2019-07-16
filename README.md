@@ -7,6 +7,17 @@ Make sure you are using a virtual environment of some sort (e.g. `virtualenv` or
 
 ```
 pip install -r requirements-dev.txt
+```
+
+Create a PostgreSQL database `readhomer_atlas`
+
+```
+createdb readhomer_atlas
+```
+
+Populate the database:
+
+```
 ./manage.py migrate
 ./manage.py loaddata sites
 ```
