@@ -102,6 +102,8 @@ TEMPLATES = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -122,9 +124,13 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.sessions",
     "django.contrib.sites",
+    # override runserver static handling
+    "whitenoise.runserver_nostatic",
     "django.contrib.staticfiles",
     # third party
+    "corsheaders",
     "django_extensions",
+    "graphene_django",
     # project
     "readhomer_atlas",
     "readhomer_atlas.library",
@@ -161,3 +167,12 @@ LOGGING = {
 FIXTURE_DIRS = [os.path.join(PROJECT_ROOT, "fixtures")]
 
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+
+CORS_ORIGIN_ALLOW_ALL = True
+
+GRAPHENE = {
+    "SCHEMA": "readhomer_atlas.schema.schema",
+    # setting RELAY_CONNECTION_MAX_LIMIT to None removes the limit; for backwards compatability with current API
+    # @@@ restore the limit
+    "RELAY_CONNECTION_MAX_LIMIT": None,
+}

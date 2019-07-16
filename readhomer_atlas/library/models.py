@@ -42,7 +42,7 @@ class Book(models.Model):
 
     @property
     def label(self):
-        return f"{self.chapter_position}.{self.section_position}.{self.subsection_position}"
+        return f"{self.position}"
 
     def __str__(self):
         return f"{self.version} [book={self.position}]"
