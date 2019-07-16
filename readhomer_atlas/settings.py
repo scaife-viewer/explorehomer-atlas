@@ -116,14 +116,18 @@ ROOT_URLCONF = "readhomer_atlas.urls"
 WSGI_APPLICATION = "readhomer_atlas.wsgi.application"
 
 INSTALLED_APPS = [
+    "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.messages",
     "django.contrib.sessions",
     "django.contrib.sites",
     "django.contrib.staticfiles",
+    # third party
+    "django_extensions",
     # project
     "readhomer_atlas",
+    "readhomer_atlas.library",
 ]
 
 ADMIN_URL = "admin:index"
