@@ -37,10 +37,10 @@ Create a superuser:
 ./manage.py createsuperuser
 ```
 
-Add the initial library fixture:
+Run the `import_versions` script:
 
 ```
-./manage.py loaddata library_data
+python manage.py shell -c 'from readhomer_atlas.library.importers import import_versions; import_versions;'
 ```
 
 Browse to `/admin/library/`
@@ -89,6 +89,46 @@ Retrieve lines within a book within a particular version:
 {
   lines(version_Urn: "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2", book_Position: 1) {
     edges {
+      node {
+        id
+        label
+        textContent
+      }
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+  }
+}
+```
+
+Page through a version ten lines at a time:
+```
+{
+  lines(version_Urn: "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2", first:10) {
+    edges {
+      cursor
+      node {
+        id
+        label
+        textContent
+      }
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+  }
+}
+```
+
+and then the next ten lines after that (using the `endCursor` value for `after` )
+```
+{
+  lines(version_Urn: "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2", first:10, after: "YXJyYXljb25uZWN0aW9uOjk=") {
+    edges {
+      cursor
       node {
         id
         label
