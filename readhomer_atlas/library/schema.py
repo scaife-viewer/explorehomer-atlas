@@ -160,11 +160,7 @@ class AlignmentChunkNode(DjangoObjectType):
     class Meta:
         model = AlignmentChunk
         interfaces = (relay.Node,)
-        # @@@ fake out filterclass instantiation until next graphene-django release
-        filter_fields = {}
-        # @@@ graphne-django master implements a `filterset_class`
-        # arg uses in place of `filter_fields`
-        # filterset_class = AlignmentChunkFilterSet
+        filterset_class = AlignmentChunkFilterSet
 
 
 class Query(ObjectType):
@@ -178,6 +174,4 @@ class Query(ObjectType):
     lines = LimitedConnectionField(LineNode, filterset_class=LineFilterSet)
 
     alignment_chunk = relay.Node.Field(AlignmentChunkNode)
-    alignment_chunks = LimitedConnectionField(
-        AlignmentChunkNode, filterset_class=AlignmentChunkFilterSet
-    )
+    alignment_chunks = LimitedConnectionField(AlignmentChunkNode)
