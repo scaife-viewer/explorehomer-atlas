@@ -40,7 +40,7 @@ Create a superuser:
 Run the `import_versions` script:
 
 ```
-python manage.py shell -c 'from readhomer_atlas.library.importers import import_versions; import_versions;'
+python manage.py shell -c 'from readhomer_atlas.library.importers import import_versions; import_versions();'
 ```
 
 Browse to `/admin/library/`
