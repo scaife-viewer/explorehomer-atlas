@@ -1,5 +1,7 @@
 from django.db import models
-from django.contrib.postgres.fields import JSONField
+
+# @@@ https://code.djangoproject.com/ticket/12990
+from django_extensions.db.fields.json import JSONField
 
 
 class Version(models.Model):
@@ -9,7 +11,7 @@ class Version(models.Model):
 
     urn = models.CharField(max_length=255)
     name = models.CharField(blank=True, null=True, max_length=255)
-    metadata = JSONField(encoder="", default=dict, blank=True)
+    metadata = JSONField(default=dict, blank=True)
     """
     {
         "work_urn": "urn:cts:greekLit:tlg0012.tlg001",
