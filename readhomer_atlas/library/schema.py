@@ -119,8 +119,7 @@ class LineFilterSet(django_filters.FilterSet):
             return queryset.none()
         subquery = queryset.filter(predicate).aggregate(min=Min("idx"), max=Max("idx"))
         queryset = queryset.filter(idx__gte=subquery["min"], idx__lte=subquery["max"])
-        # @@@ select related required for performant `label`
-        return queryset.select_related("book")
+        return queryset
 
 
 class LineNode(DjangoObjectType):
