@@ -76,27 +76,48 @@ class LineFilterSet(django_filters.FilterSet):
         model = Line
         fields = ["position", "book__position", "version__urn"]
 
+    def _resolve_ref(self, value):
+        book_position = None
+        line_position = None
+        try:
+            book_position, line_position = value.split(".")
+        except ValueError:
+            book_position = value
+        return book_position, line_position
+
     def reference_filter(self, queryset, name, value):
+        """
+        1
+        1-2
+        1.1-1.2
+        1.1-7
+        """
+        predicate = Q()
         try:
             start, end = value.split("-")
         except ValueError:
             start = end = value
-        # @@@ further validation required
-        try:
-            start_book, start_line = start.split(".")
-        except ValueError:
-            # @@@ handle "1"
-            return queryset.none()
-        try:
-            end_book, end_line = end.split(".")
-        except ValueError:
-            # @@@ handle "1.1-2"
+
+        start_book, start_line = self._resolve_ref(start)
+        if start_book and start_line:
+            condition = Q(book__position=start_book, position=start_line)
+            predicate.add(condition, Q.OR)
+        elif start_book:
+            condition = Q(book__position=start_book, position=1)
+            predicate.add(condition, Q.OR)
+        else:
             return queryset.none()
 
-        subquery = queryset.filter(
-            Q(book__position=start_book, position=start_line)
-            | Q(book__position=end_book, position=end_line)
-        ).aggregate(min=Min("idx"), max=Max("idx"))
+        end_book, end_line = self._resolve_ref(end)
+        if end_book and end_line:
+            condition = Q(book__position=end_book, position=end_line)
+            predicate.add(condition, Q.OR)
+        elif end_book:
+            condition = Q(book__position=end_book)
+            predicate.add(condition, Q.OR)
+        else:
+            return queryset.none()
+        subquery = queryset.filter(predicate).aggregate(min=Min("idx"), max=Max("idx"))
         queryset = queryset.filter(idx__gte=subquery["min"], idx__lte=subquery["max"])
         # @@@ select related required for performant `label`
         return queryset.select_related("book")
