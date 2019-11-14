@@ -30,7 +30,7 @@ class Version(models.Model):
 class VersionAlignment(models.Model):
     name = models.CharField(blank=True, null=True, max_length=255)
     slug = models.SlugField()
-    metadata = JSONField(encoder="", default=dict, blank=True)
+    metadata = JSONField(default=dict, blank=True)
 
     version = models.ForeignKey(
         "library.Version", related_name="alignments", on_delete=models.CASCADE
@@ -43,8 +43,8 @@ class VersionAlignment(models.Model):
 class AlignmentChunk(models.Model):
     # denormed from start / end
     citation = models.CharField(max_length=13)
-    items = JSONField(encoder="", default=list, blank=True)
-    metadata = JSONField(encoder="", default=dict, blank=True)
+    items = JSONField(default=list, blank=True)
+    metadata = JSONField(default=dict, blank=True)
     idx = models.IntegerField(help_text="0-based index")
 
     version = models.ForeignKey(
