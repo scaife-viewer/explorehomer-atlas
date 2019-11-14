@@ -1,4 +1,4 @@
-from django.db.models import Q, Min, Max
+from django.db.models import Max, Min, Q
 
 import django_filters
 from graphene import ObjectType, String, relay

@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Version, Book, Line
+from .models import Book, Line, Version
 
 
 @admin.register(Version)
