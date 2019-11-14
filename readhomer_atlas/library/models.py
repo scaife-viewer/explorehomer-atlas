@@ -58,6 +58,7 @@ class Line(models.Model):
     text_content = models.TextField()
 
     position = models.IntegerField()
+    book_position = models.IntegerField()
     idx = models.IntegerField(help_text="0-based index")
 
     book = models.ForeignKey(
@@ -71,8 +72,12 @@ class Line(models.Model):
         ordering = ["idx"]
 
     @property
+    def ref(self):
+        return f"{self.book_position}.{self.position}"
+
+    @property
     def label(self):
-        return f"{self.book.position}:{self.position}"
+        return self.ref
 
     def __str__(self):
         return f"{self.version} [line_num={self.label}]"
