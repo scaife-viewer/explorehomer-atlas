@@ -27,6 +27,7 @@ def _prepare_line_obj(version_obj, book_lookup, book_idx, line, line_idx):
         position=int(line_ref),
         idx=line_idx,
         book=book_obj,
+        book_position=book_obj.position,
         version=version_obj,
     )
 
