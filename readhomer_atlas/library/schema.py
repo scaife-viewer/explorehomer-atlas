@@ -68,12 +68,12 @@ class BookNode(DjangoObjectType):
         filter_fields = ["position", "version__urn"]
 
 
-class LineFilterSet(django_filters.FilterSet):
-    reference = django_filters.CharFilter(method="reference_filter")
-
-    class Meta:
-        model = Line
-        fields = ["position", "book__position", "version__urn"]
+class LineReferenceFilterMixin:
+    def _validate_reference_filter_version_urn(self):
+        version_urn = self.data.get("version__urn")
+        if not version_urn:
+            raise Exception("version_Urn is required to use the reference filter")
+        return version_urn
 
     def _resolve_ref(self, value):
         book_position = None
@@ -84,13 +84,14 @@ class LineFilterSet(django_filters.FilterSet):
             book_position = value
         return book_position, line_position
 
-    def reference_filter(self, queryset, name, value):
+    def lines_by_reference(self, value, line_queryset):
         """
         1
         1-2
         1.1-1.2
         1.1-7
         """
+        self._validate_reference_filter_version_urn()
         predicate = Q()
         try:
             start, end = value.split("-")
@@ -105,7 +106,7 @@ class LineFilterSet(django_filters.FilterSet):
             condition = Q(book__position=start_book, position=1)
             predicate.add(condition, Q.OR)
         else:
-            return queryset.none()
+            return line_queryset.none()
 
         end_book, end_line = self._resolve_ref(end)
         if end_book and end_line:
@@ -115,8 +116,22 @@ class LineFilterSet(django_filters.FilterSet):
             condition = Q(book__position=end_book)
             predicate.add(condition, Q.OR)
         else:
-            return queryset.none()
-        subquery = queryset.filter(predicate).aggregate(min=Min("idx"), max=Max("idx"))
+            return line_queryset.none()
+        subquery = line_queryset.filter(predicate).aggregate(
+            min=Min("idx"), max=Max("idx")
+        )
+        return subquery
+
+
+class LineFilterSet(LineReferenceFilterMixin, django_filters.FilterSet):
+    reference = django_filters.CharFilter(method="reference_filter")
+
+    class Meta:
+        model = Line
+        fields = ["position", "book__position", "version__urn"]
+
+    def reference_filter(self, queryset, name, value):
+        subquery = self.lines_by_reference(value, queryset)
         queryset = queryset.filter(idx__gte=subquery["min"], idx__lte=subquery["max"])
         return queryset
 
@@ -140,7 +155,7 @@ class VersionAlignmentNode(DjangoObjectType):
         filter_fields = ["name", "slug"]
 
 
-class AlignmentChunkFilterSet(django_filters.FilterSet):
+class AlignmentChunkFilterSet(LineReferenceFilterMixin, django_filters.FilterSet):
     reference = django_filters.CharFilter(method="reference_filter")
 
     class Meta:
@@ -155,19 +170,21 @@ class AlignmentChunkFilterSet(django_filters.FilterSet):
             "version__urn",
         ]
 
+    def _validate_reference_filter_version_urn(self):
+        version_urn = self.data.get("version__urn")
+        if not version_urn:
+            raise Exception("version__Urn is required to use the reference filter")
+        return version_urn
+
     def reference_filter(self, queryset, name, value):
-        try:
-            start, end = value.split("-")
-        except ValueError:
-            start = end = value
-        # @@@ further validation required
-        start_book, start_line = start.split(".")
-        end_book, end_line = end.split(".")
-        subquery = Line.objects.filter(
-            Q(book__position=start_book, position=start_line)
-            | Q(book__position=end_book, position=end_line)
-        ).distinct("idx")
-        return queryset.filter(contains__in=subquery).distinct("idx")
+        version_urn = self._validate_reference_filter_version_urn()
+
+        lines_queryset = Line.objects.filter(version__urn=version_urn)
+        subquery = self.lines_by_reference(value, lines_queryset)
+        queryset = queryset.filter(
+            start__idx__gte=subquery["min"], end__idx__lte=subquery["max"]
+        )
+        return queryset
 
 
 class AlignmentChunkNode(DjangoObjectType):
