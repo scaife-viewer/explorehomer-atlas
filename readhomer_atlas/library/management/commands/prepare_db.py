@@ -22,4 +22,7 @@ class Command(BaseCommand):
         call_command("migrate")
 
         self.stdout.write("--[Loading versions]--")
-        importers.import_versions()
+        importers.versions.import_versions(reset=True)
+
+        self.stdout.write("--[Loading alignments]--")
+        importers.alignments.import_alignments(reset=True)
