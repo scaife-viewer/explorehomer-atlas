@@ -31,7 +31,6 @@ class AlignmentChunkAdmin(admin.ModelAdmin):
     )
     list_filter = ("version", "alignment")
     raw_id_fields = ("start", "end")
-    exclude = ("contains",)
 
 
 @admin.register(Book)

@@ -142,11 +142,6 @@ def _create_alignment_chunk(version, alignment, milestone, milestone_idx):
             book__position=end_chapter, position=end_verse
         )
         chunk_obj.save()
-        chunk_obj.contains.set(
-            version.lines.filter(
-                book__position__gte=start_chapter, position__gte=start_verse
-            ).filter(book__position__lte=end_chapter, position__lte=end_verse)
-        )
         return True
     except Line.DoesNotExist:
         # greek version mismatch; could be others

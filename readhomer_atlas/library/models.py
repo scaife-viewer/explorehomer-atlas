@@ -59,14 +59,18 @@ class AlignmentChunk(models.Model):
         "library.Line", related_name="+", on_delete=models.CASCADE
     )
     end = models.ForeignKey("library.Line", related_name="+", on_delete=models.CASCADE)
-    # denormed from start/end
-    contains = models.ManyToManyField("library.Line", related_name="alignment_chunks")
 
     class Meta:
         ordering = ["idx"]
 
     def __str__(self):
         return f"{self.version} || {self.alignment} [citation={self.citation}]"
+
+    @property
+    def contains(self):
+        return self.version.lines.filter(idx__gte=self.start.idx).filter(
+            idx__lte=self.end.idx
+        )
 
 
 class Book(models.Model):
