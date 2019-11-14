@@ -1,0 +1,46 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: circleci/python:3.7
+        environment:
+          CIRCLE_CI_CORE_COUNT: 2
+
+    working_directory: ~/repo
+
+    steps:
+      - checkout
+
+      # Download and cache dependencies
+      - restore_cache:
+          keys:
+          - deps1-{{ .Branch }}-{{ checksum "requirements-dev.txt" }}
+          # fallback to using the latest cache if no exact match is found
+          - deps1-
+
+      - run:
+          name: Install Python deps in a venv
+          command: |
+            python3 -m venv venv
+            . venv/bin/activate
+            pip install -r requirements-dev.txt
+
+      - save_cache:
+          paths:
+            - ./.venv
+          key: deps1-{{ .Branch }}-{{ checksum "requirements-dev.txt" }}
+
+      # lint code!
+      - run:
+          name: lint code
+          command: |
+            . venv/bin/activate
+            isort readhomer_atlas/**/*.py -c
+            flake8 readhomer_atlas
+            black readhomer_atlas --check --diff
+
+workflows:
+  version: 2
+  build:
+    jobs:
+      - build
