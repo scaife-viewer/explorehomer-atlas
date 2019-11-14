@@ -5,7 +5,7 @@ import re
 
 from django.conf import settings
 
-from ..models import AlignmentChunk, Line, Version, VersionAlignment
+from ..models import AlignmentChunk, Version, VersionAlignment
 
 
 ALIGNMENTS_DATA_PATH = os.path.join(settings.PROJECT_ROOT, "data", "alignments")
@@ -118,7 +118,7 @@ def get_alignment_milestones(path):
     return {"ALIGNMENTS": ALIGNMENTS, "LEAVES_TO_MILESTONES": LEAVES_TO_MILESTONES}
 
 
-def _create_alignment_chunk(version, alignment, milestone, milestone_idx):
+def _alignment_chunk_obj(version, line_lookup, alignment, milestone, milestone_idx):
     chunk_obj = AlignmentChunk(
         citation=milestone["citation"],
         idx=milestone_idx,
@@ -133,22 +133,23 @@ def _create_alignment_chunk(version, alignment, milestone, milestone_idx):
     start_chapter, start_verse = [int(i) for i in start_ref.split(".")]
     end_chapter, end_verse = [int(i) for i in end_ref.split(".")]
 
-    # @@@ really poor performance; likely need a lookup built outside the loop
     try:
-        chunk_obj.start = version.lines.get(
-            book__position=start_chapter, position=start_verse
-        )
-        chunk_obj.end = version.lines.get(
-            book__position=end_chapter, position=end_verse
-        )
-        chunk_obj.save()
-        return True
-    except Line.DoesNotExist:
+        chunk_obj.start = line_lookup[f"{start_chapter}.{start_verse}"]
+        chunk_obj.end = line_lookup[f"{end_chapter}.{end_verse}"]
+        return chunk_obj
+    except KeyError:
         # greek version mismatch; could be others
         print(
             f"Skipping milestone due to line(s) not found.  [alignment.name={alignment.name} citation={milestone['citation']} milestone_id={milestone['id']}]"
         )
-        return False
+        return
+
+
+def _build_line_lookup(version):
+    lookup = {}
+    for line in version.lines.all():
+        lookup[line.ref] = line
+    return lookup
 
 
 def _import_alignment(data):
@@ -163,12 +164,17 @@ def _import_alignment(data):
     )
 
     chunks_created = 0
+    line_lookup = _build_line_lookup(version)
+    to_create = []
     for milestone_idx, milestone in enumerate(milestones["ALIGNMENTS"]):
-        chunk_created = _create_alignment_chunk(
-            version, alignment, milestone, milestone_idx
+        chunk = _alignment_chunk_obj(
+            version, line_lookup, alignment, milestone, milestone_idx
         )
-        if chunk_created:
+        if chunk:
+            to_create.append(chunk)
             chunks_created += 1
+    created = len(AlignmentChunk.objects.bulk_create(to_create, batch_size=500))
+    assert created == chunks_created
 
 
 def import_alignments(reset=False):
