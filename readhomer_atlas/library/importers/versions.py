@@ -49,7 +49,7 @@ def _import_version(data):
                 version_obj, book_lookup, book_idx, line, line_idx
             )
             lines_to_create.append(line_obj)
-    created_count = len(Line.objects.bulk_create(lines_to_create))
+    created_count = len(Line.objects.bulk_create(lines_to_create, batch_size=500))
     assert created_count == line_idx + 1
 
 
