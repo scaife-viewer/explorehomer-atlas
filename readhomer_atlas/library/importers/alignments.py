@@ -74,12 +74,12 @@ def get_alignment_milestones(path):
 
     with open(path) as f:
         reader = csv.reader(f)
-        # discard header roww
+        # discard header row
         next(reader)
         for pos, row in enumerate(reader):
             milestone_id = row[0]
             greek_content = row[2]
-            # @@@ Can't use the citation field as-is due to inaccuracies
+            # @@@ Can't use the citation field as-is due to discrepancies
             # in the source material
             # citation = row[1]
             citation = get_citation(greek_content)
