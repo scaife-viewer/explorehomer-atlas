@@ -9,17 +9,10 @@ Make sure you are using a virtual environment of some sort (e.g. `virtualenv` or
 pip install -r requirements-dev.txt
 ```
 
-Create a PostgreSQL database `readhomer_atlas`
+Create and populate the database
 
 ```
-createdb readhomer_atlas
-```
-
-Populate the database:
-
-```
-./manage.py migrate
-./manage.py loaddata sites
+./manage.py prepare_db
 ```
 
 Run the Django dev server:
@@ -35,12 +28,6 @@ Create a superuser:
 
 ```
 ./manage.py createsuperuser
-```
-
-Run the `import_versions` script:
-
-```
-python manage.py shell -c 'from readhomer_atlas.library.importers import import_versions; import_versions();'
 ```
 
 Browse to `/admin/library/`
@@ -103,6 +90,25 @@ Retrieve lines within a book within a particular version:
 }
 ```
 
+Retrieve lines from a particular passage:
+```
+{
+  lines(version_Urn: "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2", reference: "1.1-1.7") {
+    edges {
+      node {
+        id
+        label
+        textContent
+      }
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+  }
+}
+```
+
 Page through a version ten lines at a time:
 ```
 {
@@ -145,11 +151,6 @@ and then the next ten lines after that (using the `endCursor` value for `after` 
 
 ## Translation Alignments
 
-### Load sample data
-```
-./manage.py loaddata alignment_data
-```
-
 ### Sample Queries
 
 Get alignment chunks for a given line:
@@ -186,7 +187,7 @@ Get alignment chunks for a given line:
 Get alignment chunks for a given range:
 ```
 {
-  alignmentChunks(version_Urn: "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2", start_Book_Position: 1, start_Position: 8) {
+  alignmentChunks(version_Urn: "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2", reference: "1.8") {
     edges {
       cursor
       node {
