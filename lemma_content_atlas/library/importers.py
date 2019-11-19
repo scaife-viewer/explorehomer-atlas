@@ -1,3 +1,4 @@
+import csv
 import json
 import os
 
@@ -7,6 +8,9 @@ from .models import Book, Line, Version
 
 
 LIBRARY_DATA_PATH = os.path.join(settings.PROJECT_ROOT, "data", "library")
+LEMMA_CONTENT_DATA_PATH = os.path.join(
+    LIBRARY_DATA_PATH, "annotations", "lemma-content"
+)
 LIBRARY_METADATA_PATH = os.path.join(LIBRARY_DATA_PATH, "metadata.json")
 
 
@@ -61,3 +65,24 @@ def import_versions(reset=False):
     library_metadata = json.load(open(LIBRARY_METADATA_PATH))
     for version_data in library_metadata["versions"]:
         _import_version(version_data)
+        _import_lemmas(version_data)
+
+
+def _import_lemmas(version_data):
+    version_obj = Version.objects.get(urn=version_data["urn"])
+
+    lemma_content_path = os.path.join(
+        LEMMA_CONTENT_DATA_PATH, version_data["lemma_content_path"]
+    )
+    if not os.path.exists(lemma_content_path):
+        return
+
+    lookup = {}
+    with open(lemma_content_path, "r") as f:
+        for row in csv.DictReader(f):
+            lookup[row["text_part"]] = row["lemma_content"].strip()
+    to_update = []
+    for line in version_obj.lines.all():
+        line.lemma_content = lookup.get(line.label, "")
+        to_update.append(line)
+    Line.objects.bulk_update(to_update, ["lemma_content"], batch_size=500)

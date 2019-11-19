@@ -3,6 +3,7 @@
     {
       "urn": "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2",
       "content_path": "tlg0012.tlg001.perseus-grc2.txt",
+      "lemma_content_path": "tlg0012.tlg001.perseus-grc2.csv",
       "metadata": {
         "work_title": "Iliad",
         "work_urn": "urn:cts:greekLit:tlg0012.tlg001",
