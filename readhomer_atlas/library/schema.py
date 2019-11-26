@@ -27,7 +27,7 @@ class LimitedConnectionField(DjangoFilterConnectionField):
         filtering_args,
         root,
         info,
-        **resolver_kwargs
+        **resolver_kwargs,
     ):
         first = resolver_kwargs.get("first")
         last = resolver_kwargs.get("last")
@@ -44,7 +44,7 @@ class LimitedConnectionField(DjangoFilterConnectionField):
             filtering_args,
             root,
             info,
-            **resolver_kwargs
+            **resolver_kwargs,
         )
 
 
