@@ -212,12 +212,12 @@ class PassageLineConnection(Connection):
         abstract = True
 
     @staticmethod
-    def generate_passage_urn(version, passage_lines_list):
-        first = passage_lines_list[0]
-        last = passage_lines_list[-1]
+    def generate_passage_urn(version, object_list):
+        first = object_list[0]
+        last = object_list[-1]
         if first == last:
-            return f"{version.urn}:{first.label}"
-        passage_ref = "-".join([first.label, last.label])
+            return first.urn
+        passage_ref = "-".join([first.ref, last.ref])
         return f"{version.urn}:{passage_ref}"
 
     @staticmethod

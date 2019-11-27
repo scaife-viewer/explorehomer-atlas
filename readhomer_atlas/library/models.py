@@ -43,8 +43,16 @@ class Book(models.Model):
         ordering = ["idx"]
 
     @property
-    def label(self):
+    def ref(self):
         return f"{self.position}"
+
+    @property
+    def urn(self):
+        return f"{self.version.urn}:{self.ref}"
+
+    @property
+    def label(self):
+        return self.label
 
     def __str__(self):
         return f"{self.version} [book={self.position}]"
@@ -74,6 +82,10 @@ class Line(models.Model):
     @property
     def ref(self):
         return f"{self.book_position}.{self.position}"
+
+    @property
+    def urn(self):
+        return f"{self.version.urn}:{self.ref}"
 
     @property
     def label(self):
