@@ -164,8 +164,9 @@ class PassageLineFilterSet(django_filters.FilterSet):
         # info.context
         self.request.passage = dict(urn=value)
 
-        # @@@ eventually, we'll need to ensure we're querying by the urn with a trailing `:`
-        version_urn, ref = value.rsplit(":", maxsplit=1)
+        dirty_version_urn, ref = value.rsplit(":", maxsplit=1)
+        # restore the trailing :
+        version_urn = f"{dirty_version_urn}:"
         try:
             self.request.passage["version"] = Version.objects.get(urn=version_urn)
         except Version.DoesNotExist:
@@ -174,10 +175,16 @@ class PassageLineFilterSet(django_filters.FilterSet):
             queryset = queryset.filter(version__urn=version_urn)
 
         predicate = Q()
-        try:
-            start, end = ref.split("-")
-        except ValueError:
-            start = end = ref
+        if not ref:
+            # @@@ get all the lines in the work; do we want to support this
+            # or should we just return the first line?
+            start = queryset.first().ref
+            end = queryset.last().ref
+        else:
+            try:
+                start, end = ref.split("-")
+            except ValueError:
+                start = end = ref
 
         start_book, start_line = self._resolve_ref(start)
         if start_book and start_line:
@@ -218,7 +225,7 @@ class PassageLineConnection(Connection):
         if first == last:
             return first.urn
         passage_ref = "-".join([first.ref, last.ref])
-        return f"{version.urn}:{passage_ref}"
+        return f"{version.urn}{passage_ref}"
 
     @staticmethod
     def valid_previous_next_objs(previous_objects, next_objects):

@@ -48,7 +48,7 @@ class Book(models.Model):
 
     @property
     def urn(self):
-        return f"{self.version.urn}:{self.ref}"
+        return f"{self.version.urn}{self.ref}"
 
     @property
     def label(self):
@@ -85,7 +85,7 @@ class Line(models.Model):
 
     @property
     def urn(self):
-        return f"{self.version.urn}:{self.ref}"
+        return f"{self.version.urn}{self.ref}"
 
     @property
     def label(self):
