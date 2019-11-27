@@ -10,7 +10,7 @@ LIBRARY_DATA_PATH = os.path.join(settings.PROJECT_ROOT, "data", "library")
 LIBRARY_METADATA_PATH = os.path.join(LIBRARY_DATA_PATH, "metadata.json")
 
 
-def _prepare_line_obj(version_obj, book_lookup, book_idx, line, line_idx):
+def _prepare_line_obj(version_obj, book_lookup, counters, line, line_idx):
     ref, tokens = line.strip().split(maxsplit=1)
     _, passage_ref = ref.split(".", maxsplit=1)
     book_ref, line_ref = passage_ref.split(".", maxsplit=1)
@@ -18,10 +18,10 @@ def _prepare_line_obj(version_obj, book_lookup, book_idx, line, line_idx):
     book_obj = book_lookup.get(book_ref)
     if book_obj is None:
         book_obj, _ = Book.objects.get_or_create(
-            version=version_obj, position=int(book_ref), idx=book_idx
+            version=version_obj, position=int(book_ref), idx=counters["book_idx"]
         )
         book_lookup[book_ref] = book_obj
-        book_idx += 1
+        counters["book_idx"] += 1
     return Line(
         text_content=tokens,
         position=int(line_ref),
@@ -39,14 +39,14 @@ def _import_version(data):
     )
 
     book_lookup = {}
-    book_idx = 0
+    counters = {"book_idx": 0}
     lines_to_create = []
 
     full_content_path = os.path.join(LIBRARY_DATA_PATH, data["content_path"])
     with open(full_content_path, "r") as f:
         for line_idx, line in enumerate(f):
             line_obj = _prepare_line_obj(
-                version_obj, book_lookup, book_idx, line, line_idx
+                version_obj, book_lookup, counters, line, line_idx
             )
             lines_to_create.append(line_obj)
     created_count = len(Line.objects.bulk_create(lines_to_create))
