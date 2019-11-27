@@ -221,7 +221,7 @@ class PassageLineConnection(Connection):
         return f"{version.urn}:{passage_ref}"
 
     @staticmethod
-    def valid_next_previous_objects(next_objects, previous_objects):
+    def valid_previous_next_objs(previous_objects, next_objects):
         """
         Prevent paginator from wrapping around to the beginning of the queryset
         """
@@ -231,28 +231,28 @@ class PassageLineConnection(Connection):
             and next_objects[0].idx < previous_objects[0].idx
         ):
             return previous_objects, []
-        return next_objects, previous_objects
+        return previous_objects, next_objects
 
-    def get_next_previous_objects(self, version, lines_queryset):
+    def get_previous_next_line_objs(self, version, lines_queryset):
         paginator = KeysetPaginator(
             version.lines.all().order_by("idx"), lines_queryset.count()
         )
         page = paginator.get_page(f"[false, {lines_queryset.first().idx - 1}]")
         previous_objects = paginator.get_page(page.previous_page_number()).object_list
         next_objects = paginator.get_page(page.next_page_number()).object_list
-        return self.valid_next_previous_objects(next_objects, previous_objects)
+        return self.valid_previous_next_objs(previous_objects, next_objects)
 
     def get_sibling_metadata(self, version, lines_queryset, urn):
         data = {}
-        previous_objects, next_objects = self.get_next_previous_objects(
+        previous_objects, next_objects = self.get_previous_next_line_objs(
             version, lines_queryset
         )
 
         if previous_objects:
-            data["next"] = self.generate_passage_urn(version, previous_objects, urn)
+            data["previous"] = self.generate_passage_urn(version, previous_objects)
 
         if next_objects:
-            data["previous"] = self.generate_passage_urn(version, next_objects, urn)
+            data["next"] = self.generate_passage_urn(version, next_objects)
         return {"siblings": data}
 
     def resolve_metadata(self, info, *args, **kwargs):
