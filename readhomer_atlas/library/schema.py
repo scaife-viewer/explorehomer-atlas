@@ -233,21 +233,18 @@ class PassageLineConnection(Connection):
             return previous_objects, []
         return previous_objects, next_objects
 
-    def get_previous_next_line_objs(self, version, lines_queryset):
-        paginator = KeysetPaginator(
-            version.lines.all().order_by("idx"), lines_queryset.count()
-        )
-        page = paginator.get_page(f"[false, {lines_queryset.first().idx - 1}]")
+    def get_previous_next_objs(self, queryset, per_page, obj):
+        paginator = KeysetPaginator(queryset.order_by("idx"), per_page)
+        page = paginator.get_page(f"[false, {obj.idx - 1}]")
         previous_objects = paginator.get_page(page.previous_page_number()).object_list
         next_objects = paginator.get_page(page.next_page_number()).object_list
         return self.valid_previous_next_objs(previous_objects, next_objects)
 
-    def get_sibling_metadata(self, version, lines_queryset, urn):
-        data = {}
-        previous_objects, next_objects = self.get_previous_next_line_objs(
-            version, lines_queryset
+    def get_sibling_metadata(self, version, all_queryset, filtered_queryset):
+        previous_objects, next_objects = self.get_previous_next_objs(
+            all_queryset, filtered_queryset.count(), filtered_queryset.first()
         )
-
+        data = {}
         if previous_objects:
             data["previous"] = self.generate_passage_urn(version, previous_objects)
 
@@ -260,11 +257,28 @@ class PassageLineConnection(Connection):
         if not passage_dict:
             return
 
+        urn = passage_dict["urn"]
         version = passage_dict["version"]
         lines_queryset = passage_dict["lines_qs"]
 
+        ref = urn.rsplit(":", maxsplit=1)[1]
+        try:
+            book_level_ref = int(ref.rsplit("-")[0])
+        except ValueError:
+            book_level_ref = None
+
         data = {}
-        data.update(self.get_sibling_metadata(version, lines_queryset))
+        if book_level_ref:
+            books_queryset = version.books.filter(
+                pk__in=lines_queryset.values_list("book")
+            )
+            data.update(
+                self.get_sibling_metadata(version, version.books.all(), books_queryset)
+            )
+        else:
+            data.update(
+                self.get_sibling_metadata(version, version.lines.all(), lines_queryset)
+            )
         return camelize(data)
 
 
