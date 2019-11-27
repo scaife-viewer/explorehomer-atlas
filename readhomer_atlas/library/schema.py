@@ -242,6 +242,19 @@ class PassageLineConnection(Connection):
         next_objects = paginator.get_page(page.next_page_number()).object_list
         return self.valid_next_previous_objects(next_objects, previous_objects)
 
+    def get_sibling_metadata(self, version, lines_queryset, urn):
+        data = {}
+        previous_objects, next_objects = self.get_next_previous_objects(
+            version, lines_queryset
+        )
+
+        if previous_objects:
+            data["next"] = self.generate_passage_urn(version, previous_objects, urn)
+
+        if next_objects:
+            data["previous"] = self.generate_passage_urn(version, next_objects, urn)
+        return {"siblings": data}
+
     def resolve_metadata(self, info, *args, **kwargs):
         passage_dict = info.context.passage
         if not passage_dict:
@@ -250,15 +263,8 @@ class PassageLineConnection(Connection):
         version = passage_dict["version"]
         lines_queryset = passage_dict["lines_qs"]
 
-        previous_objects, next_objects = self.get_next_previous_objects(
-            version, lines_queryset
-        )
         data = {}
-        if previous_objects:
-            data["prev_urn"] = self.generate_passage_urn(version, previous_objects)
-
-        if next_objects:
-            data["next_urn"] = self.generate_passage_urn(version, next_objects)
+        data.update(self.get_sibling_metadata(version, lines_queryset))
         return camelize(data)
 
 
