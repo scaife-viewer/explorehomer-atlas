@@ -6,6 +6,7 @@ from graphene.types import generic
 from graphene_django import DjangoObjectType
 from graphene_django.filter import DjangoFilterConnectionField
 from graphene_django.utils import camelize
+from keyset_pagination.paginator import KeysetPaginator
 
 from .models import Book, Line, Version
 
@@ -147,6 +148,7 @@ class PassageLineFilterSet(django_filters.FilterSet):
             book_position, line_position = value.split(".")
         except ValueError:
             book_position = value
+        # @@@ implement URN healing
         return book_position, line_position
 
     def reference_filter(self, queryset, name, value):
@@ -210,15 +212,35 @@ class PassageLineConnection(Connection):
         abstract = True
 
     @staticmethod
-    def generate_passage_urn(version, passage_lines):
-        # cast to list to avoid multiple queries
-        # @@@ could also return min and max labels if
-        # we index, rather than compute
-        passage_lines_list = list(passage_lines)
+    def generate_passage_urn(version, passage_lines_list):
         first = passage_lines_list[0]
         last = passage_lines_list[-1]
+        if first == last:
+            return f"{version.urn}:{first.label}"
         passage_ref = "-".join([first.label, last.label])
         return f"{version.urn}:{passage_ref}"
+
+    @staticmethod
+    def valid_next_previous_objects(next_objects, previous_objects):
+        """
+        Prevent paginator from wrapping around to the beginning of the queryset
+        """
+        if (
+            next_objects
+            and previous_objects
+            and next_objects[0].idx < previous_objects[0].idx
+        ):
+            return previous_objects, []
+        return next_objects, previous_objects
+
+    def get_next_previous_objects(self, version, lines_queryset):
+        paginator = KeysetPaginator(
+            version.lines.all().order_by("idx"), lines_queryset.count()
+        )
+        page = paginator.get_page(f"[false, {lines_queryset.first().idx - 1}]")
+        previous_objects = paginator.get_page(page.previous_page_number()).object_list
+        next_objects = paginator.get_page(page.next_page_number()).object_list
+        return self.valid_next_previous_objects(next_objects, previous_objects)
 
     def resolve_metadata(self, info, *args, **kwargs):
         passage_dict = info.context.passage
@@ -228,20 +250,15 @@ class PassageLineConnection(Connection):
         version = passage_dict["version"]
         lines_queryset = passage_dict["lines_qs"]
 
-        first_idx = lines_queryset.first().idx
-        last_idx = lines_queryset.last().idx
-        slice_length = last_idx - first_idx + 1
-        previous_idx = first_idx - slice_length
-        next_idx = first_idx + slice_length
-
+        previous_objects, next_objects = self.get_next_previous_objects(
+            version, lines_queryset
+        )
         data = {}
-        if previous_idx >= 0:
-            prev_lines = version.lines.filter(idx__gte=previous_idx)[0:slice_length]
-            data["prev_urn"] = self.generate_passage_urn(version, prev_lines)
+        if previous_objects:
+            data["prev_urn"] = self.generate_passage_urn(version, previous_objects)
 
-        if next_idx:
-            next_lines = version.lines.filter(idx__gte=next_idx)[0:slice_length]
-            data["next_urn"] = self.generate_passage_urn(version, next_lines)
+        if next_objects:
+            data["next_urn"] = self.generate_passage_urn(version, next_objects)
         return camelize(data)
 
 
