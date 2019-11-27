@@ -268,6 +268,10 @@ class PassageLineConnection(Connection):
             book_level_ref = None
 
         data = {}
+        if lines_queryset == version.lines.all():
+            # no siblings required, since all lines are in the
+            # response
+            return data
         if book_level_ref:
             books_queryset = version.books.filter(
                 pk__in=lines_queryset.values_list("book")
