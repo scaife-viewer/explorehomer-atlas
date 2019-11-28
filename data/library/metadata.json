@@ -6,7 +6,8 @@
       "metadata": {
         "work_title": "Iliad",
         "work_urn": "urn:cts:greekLit:tlg0012.tlg001:",
-        "type": "edition"
+        "type": "edition",
+        "first_passage_urn": "urn:cts:greekLit:tlg0012.tlg001:1.1-1.7"
       }
     },
     {
@@ -15,7 +16,8 @@
       "metadata": {
         "work_title": "Odyssey",
         "work_urn": "urn:cts:greekLit:tlg0012.tlg002:",
-        "type": "edition"
+        "type": "edition",
+        "first_passage_urn": "urn:cts:greekLit:tlg0012.tlg002:1.1-1.10"
       }
     }
   ]
