@@ -60,6 +60,9 @@ class VersionNode(DjangoObjectType):
         interfaces = (relay.Node,)
         filter_fields = ["name", "urn"]
 
+    def resolve_metadata(obj, *args, **kwargs):
+        return camelize(obj.metadata)
+
 
 class BookNode(DjangoObjectType):
     label = String()
