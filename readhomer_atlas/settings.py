@@ -97,6 +97,7 @@ TEMPLATES = [
 ]
 
 MIDDLEWARE = [
+    "querycount.middleware.QueryCountMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "corsheaders.middleware.CorsMiddleware",

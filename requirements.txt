@@ -2,6 +2,7 @@ django-cors-headers==3.1.1
 django-extensions==2.2.5
 django-filter==2.2.0
 django-keyset-pagination-plus==0.9.9
+django-querycount==0.7.0
 django==2.2.7
 graphene-django==2.6.0
 gunicorn==20.0.0
