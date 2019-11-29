@@ -22,13 +22,15 @@ def _prepare_line_obj(version_obj, book_lookup, counters, line, line_idx):
         )
         book_lookup[book_ref] = book_obj
         counters["book_idx"] += 1
+    position = int(line_ref)
     return Line(
         text_content=tokens,
-        position=int(line_ref),
+        position=position,
         idx=line_idx,
         book=book_obj,
         book_position=book_obj.position,
         version=version_obj,
+        urn=Line.generate_urn(version_obj.urn, f"{book_obj.position}.{position}"),
     )
 
 

@@ -64,6 +64,7 @@ class Line(models.Model):
     """
 
     text_content = models.TextField()
+    urn = models.CharField(max_length=255)
 
     position = models.IntegerField()
     book_position = models.IntegerField()
@@ -84,12 +85,12 @@ class Line(models.Model):
         return f"{self.book_position}.{self.position}"
 
     @property
-    def urn(self):
-        return f"{self.version.urn}{self.ref}"
-
-    @property
     def label(self):
         return self.ref
 
     def __str__(self):
         return f"{self.version} [line_num={self.label}]"
+
+    @classmethod
+    def generate_urn(cls, version_urn, ref):
+        return f"{version_urn}{ref}"
