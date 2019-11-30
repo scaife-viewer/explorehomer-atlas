@@ -101,6 +101,8 @@ class LineFilterSet(django_filters.FilterSet):
             start = end = value
 
         start_book, start_line = self._resolve_ref(start)
+        end_book, end_line = self._resolve_ref(end)
+
         if start_book and start_line:
             condition = Q(book__position=start_book, position=start_line)
             predicate.add(condition, Q.OR)
@@ -108,17 +110,17 @@ class LineFilterSet(django_filters.FilterSet):
             condition = Q(book__position=start_book, position=1)
             predicate.add(condition, Q.OR)
         else:
-            return queryset.none()
+            raise ValueError(f"Invalid reference: {value}")
 
-        end_book, end_line = self._resolve_ref(end)
-        if end_book and end_line:
+        if start_book and start_line and end_book and end_line:
             condition = Q(book__position=end_book, position=end_line)
             predicate.add(condition, Q.OR)
-        elif end_book:
+        elif start_book and not start_line and end_book and not end_line:
             condition = Q(book__position=end_book)
             predicate.add(condition, Q.OR)
         else:
-            return queryset.none()
+            raise ValueError(f"Invalid reference: {value}")
+
         subquery = queryset.filter(predicate).aggregate(min=Min("idx"), max=Max("idx"))
         queryset = queryset.filter(idx__gte=subquery["min"], idx__lte=subquery["max"])
         return queryset
@@ -187,6 +189,8 @@ class PassageLineFilterSet(django_filters.FilterSet):
                 start = end = ref
 
         start_book, start_line = self._resolve_ref(start)
+        end_book, end_line = self._resolve_ref(end)
+
         if start_book and start_line:
             condition = Q(book__position=start_book, position=start_line)
             predicate.add(condition, Q.OR)
@@ -194,17 +198,17 @@ class PassageLineFilterSet(django_filters.FilterSet):
             condition = Q(book__position=start_book, position=1)
             predicate.add(condition, Q.OR)
         else:
-            return queryset.none()
+            raise ValueError(f"Invalid reference: {value}")
 
-        end_book, end_line = self._resolve_ref(end)
-        if end_book and end_line:
+        if start_book and start_line and end_book and end_line:
             condition = Q(book__position=end_book, position=end_line)
             predicate.add(condition, Q.OR)
-        elif end_book:
+        elif start_book and not start_line and end_book and not end_line:
             condition = Q(book__position=end_book)
             predicate.add(condition, Q.OR)
         else:
-            return queryset.none()
+            raise ValueError(f"Invalid reference: {value}")
+
         subquery = queryset.filter(predicate).aggregate(min=Min("idx"), max=Max("idx"))
         queryset = queryset.filter(idx__gte=subquery["min"], idx__lte=subquery["max"])
 
