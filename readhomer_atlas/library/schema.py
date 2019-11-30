@@ -236,6 +236,18 @@ class PassageLineConnection(Connection):
         passage_ref = "-".join(line_refs)
         return f"{version.urn}{passage_ref}"
 
+    def get_ancestor_metadata(self, obj):
+        data = []
+        if obj:
+            data.append(
+                {
+                    # @@@ proper name for this is ref or position?
+                    "ref": obj.ref,
+                    "urn": obj.book.urn,
+                }
+            )
+        return data
+
     def get_sibling_metadata(self, version, all_queryset, start_idx, count):
         data = {}
 
@@ -249,9 +261,22 @@ class PassageLineConnection(Connection):
 
         if next_objects:
             data["next"] = self.generate_passage_urn(version, next_objects)
-        return {"siblings": data}
+        return data
+
+    def get_children_metadata(self, lines_queryset):
+        data = []
+        for line in lines_queryset.values("position", "urn"):
+            data.append(
+                {
+                    # @@@ proper name is lsb or position
+                    "lsb": str(line.get("position")),
+                    "urn": line.get("urn"),
+                }
+            )
+        return data
 
     def resolve_metadata(self, info, *args, **kwargs):
+        # @@@ resolve metadata.siblings|ancestors|children individually
         passage_dict = info.context.passage
         if not passage_dict:
             return
@@ -280,19 +305,17 @@ class PassageLineConnection(Connection):
             )
             start_idx = books_queryset[0]
             chunk_length = len(books_queryset)
-            data.update(
-                self.get_sibling_metadata(
-                    version, version.books.all(), start_idx, chunk_length
-                )
+            data["siblings"] = self.get_sibling_metadata(
+                version, version.books.all(), start_idx, chunk_length
             )
+            data["children"] = self.get_children_metadata(lines_queryset)
         else:
             start_idx = passage_dict["start_idx"]
             chunk_length = passage_dict["chunk_length"]
-            data.update(
-                self.get_sibling_metadata(
-                    version, version.lines.all(), start_idx, chunk_length
-                )
+            data["siblings"] = self.get_sibling_metadata(
+                version, version.lines.all(), start_idx, chunk_length
             )
+            data["ancestors"] = self.get_ancestor_metadata(lines_queryset.first())
         return camelize(data)
 
 
