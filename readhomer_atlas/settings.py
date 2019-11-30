@@ -173,3 +173,9 @@ GRAPHENE = {
     # @@@ restore the limit
     "RELAY_CONNECTION_MAX_LIMIT": None,
 }
+
+ATLAS_CONFIG = dict(
+    IN_MEMORY_PASSAGE_CHUNK_MAX=int(
+        os.environ.get("ATLAS_IN_MEMORY_PASSAGE_CHUNK_MAX", 2500)
+    )
+)

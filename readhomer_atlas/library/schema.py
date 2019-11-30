@@ -6,9 +6,9 @@ from graphene.types import generic
 from graphene_django import DjangoObjectType
 from graphene_django.filter import DjangoFilterConnectionField
 from graphene_django.utils import camelize
-from keyset_pagination.paginator import KeysetPaginator
 
 from .models import Book, Line, Version
+from .utils import get_chunker
 
 
 class LimitedConnectionField(DjangoFilterConnectionField):
@@ -213,6 +213,9 @@ class PassageLineFilterSet(django_filters.FilterSet):
         queryset = queryset.filter(idx__gte=subquery["min"], idx__lte=subquery["max"])
 
         self.request.passage["lines_qs"] = queryset
+        self.request.passage["start_idx"] = subquery["min"]
+        self.request.passage["chunk_length"] = subquery["max"] - subquery["min"] + 1
+
         return queryset
 
 
@@ -226,36 +229,21 @@ class PassageLineConnection(Connection):
     def generate_passage_urn(version, object_list):
         first = object_list[0]
         last = object_list[-1]
+
         if first == last:
-            return first.urn
-        passage_ref = "-".join([first.ref, last.ref])
+            return first.get("urn")
+        line_refs = [line.get("ref") for line in [first, last]]
+        passage_ref = "-".join(line_refs)
         return f"{version.urn}{passage_ref}"
 
-    @staticmethod
-    def valid_previous_next_objs(previous_objects, next_objects):
-        """
-        Prevent paginator from wrapping around to the beginning of the queryset
-        """
-        if (
-            next_objects
-            and previous_objects
-            and next_objects[0].idx < previous_objects[0].idx
-        ):
-            return previous_objects, []
-        return previous_objects, next_objects
-
-    def get_previous_next_objs(self, queryset, per_page, obj):
-        paginator = KeysetPaginator(queryset.order_by("idx"), per_page)
-        page = paginator.get_page(f"[false, {obj.idx - 1}]")
-        previous_objects = paginator.get_page(page.previous_page_number()).object_list
-        next_objects = paginator.get_page(page.next_page_number()).object_list
-        return self.valid_previous_next_objs(previous_objects, next_objects)
-
-    def get_sibling_metadata(self, version, all_queryset, filtered_queryset):
-        previous_objects, next_objects = self.get_previous_next_objs(
-            all_queryset, filtered_queryset.count(), filtered_queryset.first()
-        )
+    def get_sibling_metadata(self, version, all_queryset, start_idx, count):
         data = {}
+
+        chunker = get_chunker(
+            all_queryset, start_idx, count, queryset_values=["idx", "urn", "ref"]
+        )
+        previous_objects, next_objects = chunker.get_prev_next_boundaries()
+
         if previous_objects:
             data["previous"] = self.generate_passage_urn(version, previous_objects)
 
@@ -279,20 +267,31 @@ class PassageLineConnection(Connection):
             book_level_ref = None
 
         data = {}
-        if lines_queryset == version.lines.all():
-            # no siblings required, since all lines are in the
-            # response
-            return data
         if book_level_ref:
-            books_queryset = version.books.filter(
-                pk__in=lines_queryset.values_list("book")
+            # @@@ is it worth another query to detect
+            # if we should do this as a list or using
+            # SQL queries?
+            # Might be something we can pre-calculate
+            # within version metadata
+            books_queryset = list(
+                version.books.filter(
+                    pk__in=lines_queryset.values_list("book")
+                ).values_list("idx", flat=True)
             )
+            start_idx = books_queryset[0]
+            chunk_length = len(books_queryset)
             data.update(
-                self.get_sibling_metadata(version, version.books.all(), books_queryset)
+                self.get_sibling_metadata(
+                    version, version.books.all(), start_idx, chunk_length
+                )
             )
         else:
+            start_idx = passage_dict["start_idx"]
+            chunk_length = passage_dict["chunk_length"]
             data.update(
-                self.get_sibling_metadata(version, version.lines.all(), lines_queryset)
+                self.get_sibling_metadata(
+                    version, version.lines.all(), start_idx, chunk_length
+                )
             )
         return camelize(data)
 
