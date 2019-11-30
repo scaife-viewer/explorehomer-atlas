@@ -12,13 +12,17 @@ LIBRARY_METADATA_PATH = os.path.join(LIBRARY_DATA_PATH, "metadata.json")
 
 def _prepare_line_obj(version_obj, book_lookup, counters, line, line_idx):
     ref, tokens = line.strip().split(maxsplit=1)
-    _, passage_ref = ref.split(".", maxsplit=1)
-    book_ref, line_ref = passage_ref.split(".", maxsplit=1)
+    _, textpart_ref = ref.split(".", maxsplit=1)
+    book_ref, line_ref = textpart_ref.split(".", maxsplit=1)
 
     book_obj = book_lookup.get(book_ref)
     if book_obj is None:
         book_obj, _ = Book.objects.get_or_create(
-            version=version_obj, position=int(book_ref), idx=counters["book_idx"]
+            version=version_obj,
+            position=int(book_ref),
+            idx=counters["book_idx"],
+            ref=book_ref,
+            urn=Book.generate_urn(version_obj.urn, book_ref),
         )
         book_lookup[book_ref] = book_obj
         counters["book_idx"] += 1
@@ -30,7 +34,8 @@ def _prepare_line_obj(version_obj, book_lookup, counters, line, line_idx):
         book=book_obj,
         book_position=book_obj.position,
         version=version_obj,
-        urn=Line.generate_urn(version_obj.urn, f"{book_obj.position}.{position}"),
+        ref=textpart_ref,
+        urn=Line.generate_urn(version_obj.urn, textpart_ref),
     )
 
 
