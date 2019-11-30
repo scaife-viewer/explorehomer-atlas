@@ -181,10 +181,13 @@ class AlignmentChunkFilterSet(LineReferenceFilterMixin, django_filters.FilterSet
 
         lines_queryset = Line.objects.filter(version__urn=version_urn)
         subquery = self.lines_by_reference(value, lines_queryset)
-        queryset = queryset.filter(
+        ends_in_range = Q(
             start__idx__gte=subquery["min"], end__idx__lte=subquery["max"]
         )
-        return queryset
+        starts_in_range = Q(
+            start__idx__gte=subquery["min"], start__idx__lte=subquery["max"]
+        )
+        return queryset.filter(ends_in_range | starts_in_range)
 
 
 class AlignmentChunkNode(DjangoObjectType):
