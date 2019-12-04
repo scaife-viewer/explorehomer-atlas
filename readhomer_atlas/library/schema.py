@@ -168,6 +168,7 @@ class AlignmentChunkFilterSet(LineReferenceFilterMixin, django_filters.FilterSet
             "end__book__position",
             "end__position",
             "version__urn",
+            "idx",
         ]
 
     def _validate_reference_filter_version_urn(self):
