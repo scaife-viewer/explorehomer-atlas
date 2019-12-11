@@ -1,92 +1,36 @@
+from django.conf import settings
 from django.db import models
 
 # @@@ https://code.djangoproject.com/ticket/12990
 from django_extensions.db.fields.json import JSONField
+from treebeard.mp_tree import MP_Node
 
 
-class Version(models.Model):
-    """
-    urn:cts:greekLit:tlg0012.tlg001.perseus-grc2
-    """
+class Node(MP_Node):
+    kind = models.CharField(max_length=255)
+    urn = models.CharField(max_length=255, unique=True)
+    ref = models.CharField(max_length=255, blank=True, null=True)
+    text_content = models.TextField(blank=True, null=True)
+    metadata = JSONField(default=dict, blank=True, null=True)
 
-    urn = models.CharField(max_length=255)
-    name = models.CharField(blank=True, null=True, max_length=255)
-    metadata = JSONField(default=dict, blank=True)
-    """
-    {
-        "work_urn": "urn:cts:greekLit:tlg0012.tlg001",
-        "work_title": "Iliad",
-        "type": "edition"
-    }
-    """
-
-    class Meta:
-        ordering = ["urn"]
+    alphabet = settings.NODE_ALPHABET
 
     def __str__(self):
-        return self.name
-
-
-class Book(models.Model):
-    """
-    urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1
-    """
-
-    urn = models.CharField(max_length=255)
-    ref = models.CharField(max_length=255)
-
-    position = models.IntegerField()
-    idx = models.IntegerField(help_text="0-based index")
-
-    version = models.ForeignKey(
-        "library.Version", related_name="books", on_delete=models.CASCADE
-    )
-
-    class Meta:
-        ordering = ["idx"]
+        return f"{self.kind}: {self.urn}"
 
     @property
-    def label(self):
-        return self.label
-
-    def __str__(self):
-        return f"{self.version} [book={self.position}]"
-
-    @classmethod
-    def generate_urn(cls, version_urn, ref):
-        return f"{version_urn}{ref}"
-
-
-class Line(models.Model):
-    """
-    urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1.1
-    """
-
-    text_content = models.TextField()
-    urn = models.CharField(max_length=255)
-    ref = models.CharField(max_length=255)
-
-    position = models.IntegerField()
-    book_position = models.IntegerField()
-    idx = models.IntegerField(help_text="0-based index")
-
-    book = models.ForeignKey(
-        "library.Book", related_name="lines", on_delete=models.CASCADE
-    )
-    version = models.ForeignKey(
-        "library.Version", related_name="lines", on_delete=models.CASCADE
-    )
-
-    class Meta:
-        ordering = ["idx"]
+    def name(self):
+        return self.metadata.get("work_title")
 
     @property
-    def label(self):
-        return self.ref
+    def idx(self):
+        qs = self.get_root().get_descendants().filter(depth=self.depth)
+        return list(qs).index(self)
 
-    def __str__(self):
-        return f"{self.version} [line_num={self.label}]"
+    @property
+    def position(self):
+        return list(self.get_siblings()).index(self)
 
-    @classmethod
-    def generate_urn(cls, version_urn, ref):
-        return f"{version_urn}{ref}"
+    @property
+    def rank(self):
+        return self.depth - 1
