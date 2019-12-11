@@ -10,25 +10,32 @@ LIBRARY_DATA_PATH = os.path.join(settings.PROJECT_ROOT, "data", "library")
 LIBRARY_METADATA_PATH = os.path.join(LIBRARY_DATA_PATH, "metadata.json")
 
 
-def _prepare_line_obj(version_obj, book_lookup, book_idx, line, line_idx):
+def _prepare_line_obj(version_obj, book_lookup, counters, line, line_idx):
     ref, tokens = line.strip().split(maxsplit=1)
-    _, passage_ref = ref.split(".", maxsplit=1)
-    book_ref, line_ref = passage_ref.split(".", maxsplit=1)
+    _, textpart_ref = ref.split(".", maxsplit=1)
+    book_ref, line_ref = textpart_ref.split(".", maxsplit=1)
 
     book_obj = book_lookup.get(book_ref)
     if book_obj is None:
         book_obj, _ = Book.objects.get_or_create(
-            version=version_obj, position=int(book_ref), idx=book_idx
+            version=version_obj,
+            position=int(book_ref),
+            idx=counters["book_idx"],
+            ref=book_ref,
+            urn=Book.generate_urn(version_obj.urn, book_ref),
         )
         book_lookup[book_ref] = book_obj
-        book_idx += 1
+        counters["book_idx"] += 1
+    position = int(line_ref)
     return Line(
         text_content=tokens,
-        position=int(line_ref),
+        position=position,
         idx=line_idx,
         book=book_obj,
         book_position=book_obj.position,
         version=version_obj,
+        ref=textpart_ref,
+        urn=Line.generate_urn(version_obj.urn, textpart_ref),
     )
 
 
@@ -39,14 +46,14 @@ def _import_version(data):
     )
 
     book_lookup = {}
-    book_idx = 0
+    counters = {"book_idx": 0}
     lines_to_create = []
 
     full_content_path = os.path.join(LIBRARY_DATA_PATH, data["content_path"])
     with open(full_content_path, "r") as f:
         for line_idx, line in enumerate(f):
             line_obj = _prepare_line_obj(
-                version_obj, book_lookup, book_idx, line, line_idx
+                version_obj, book_lookup, counters, line, line_idx
             )
             lines_to_create.append(line_obj)
     created_count = len(Line.objects.bulk_create(lines_to_create))
