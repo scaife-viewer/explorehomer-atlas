@@ -1,21 +1,13 @@
 from django.contrib import admin
 
-from .models import Book, Line, Version
+from treebeard.admin import TreeAdmin
+from treebeard.forms import movenodeform_factory
+
+from .models import Node
 
 
-@admin.register(Version)
-class VersionAdmin(admin.ModelAdmin):
-    list_display = ("id", "urn", "name", "metadata")
-    search_fields = ("name",)
+class NodeAdmin(TreeAdmin):
+    form = movenodeform_factory(Node)
 
 
-@admin.register(Book)
-class BookAdmin(admin.ModelAdmin):
-    list_display = ("id", "position", "idx", "version")
-    list_filter = ("version",)
-
-
-@admin.register(Line)
-class LineAdmin(admin.ModelAdmin):
-    list_display = ("id", "text_content", "position", "idx", "book", "version")
-    list_filter = ("book", "version")
+admin.site.register(Node, NodeAdmin)

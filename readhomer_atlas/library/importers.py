@@ -3,67 +3,65 @@ import os
 
 from django.conf import settings
 
-from .models import Book, Line, Version
+from .models import Node
 
 
 LIBRARY_DATA_PATH = os.path.join(settings.PROJECT_ROOT, "data", "library")
 LIBRARY_METADATA_PATH = os.path.join(LIBRARY_DATA_PATH, "metadata.json")
 
 
-def _prepare_line_obj(version_obj, book_lookup, counters, line, line_idx):
+def _destructure_ref(reference):
+    """
+    NODE_HIERARCHY = ('A', 'B', 'C', 'D', 'E',)
+    assert _destructure_ref('1.2.3.a.5') == [
+        ('A', '1'),
+        ('B', '1.2'),
+        ('C', '1.2.3'),
+        ('D', '1.2.3.a'),
+        ('E', '1.2.3.a.5')
+    ]
+    """
+    components = reference.split(".")
+    return [
+        (kind, ".".join(components[: idx + 1]))
+        for idx, kind in enumerate(settings.NODE_HIERARCHY)
+    ]
+
+
+def _generate_branch(line, nodes, root_node):
     ref, tokens = line.strip().split(maxsplit=1)
     _, textpart_ref = ref.split(".", maxsplit=1)
-    book_ref, line_ref = textpart_ref.split(".", maxsplit=1)
 
-    book_obj = book_lookup.get(book_ref)
-    if book_obj is None:
-        book_obj, _ = Book.objects.get_or_create(
-            version=version_obj,
-            position=int(book_ref),
-            idx=counters["book_idx"],
-            ref=book_ref,
-            urn=Book.generate_urn(version_obj.urn, book_ref),
-        )
-        book_lookup[book_ref] = book_obj
-        counters["book_idx"] += 1
-    position = int(line_ref)
-    return Line(
-        text_content=tokens,
-        position=position,
-        idx=line_idx,
-        book=book_obj,
-        book_position=book_obj.position,
-        version=version_obj,
-        ref=textpart_ref,
-        urn=Line.generate_urn(version_obj.urn, textpart_ref),
-    )
+    refs = _destructure_ref(textpart_ref)
+    for idx, key in enumerate(refs):
+        parent = root_node if idx == 0 else nodes.get(refs[idx - 1])
+        node = nodes.get(key)
+        if node is None:
+            kind, ref = key
+            data = {"kind": kind, "urn": f"{root_node.urn}{ref}", "ref": ref}
+            if key == refs[-1]:
+                data.update({"text_content": tokens})
+            node = parent.add_child(**data)
+            nodes[key] = node
 
 
 def _import_version(data):
-    version_obj, _ = Version.objects.update_or_create(
-        urn=data["urn"],
-        defaults=dict(name=data["metadata"]["work_title"], metadata=data["metadata"]),
+    root_node = Node.add_root(
+        kind="Version", urn=data["urn"], metadata=data["metadata"]
     )
 
-    book_lookup = {}
-    counters = {"book_idx": 0}
-    lines_to_create = []
-
+    nodes = {}
     full_content_path = os.path.join(LIBRARY_DATA_PATH, data["content_path"])
     with open(full_content_path, "r") as f:
-        for line_idx, line in enumerate(f):
-            line_obj = _prepare_line_obj(
-                version_obj, book_lookup, counters, line, line_idx
-            )
-            lines_to_create.append(line_obj)
-    created_count = len(Line.objects.bulk_create(lines_to_create))
-    assert created_count == line_idx + 1
+        for line in f:
+            _generate_branch(line, nodes, root_node)
+
+    created_count = root_node.get_descendant_count()
+    print(f"{root_node.name}: created {created_count + 1} nodes")
 
 
-def import_versions(reset=False):
-    if reset:
-        # delete all previous Version instances
-        Version.objects.all().delete()
+def import_versions():
+    Node.objects.filter(kind="Version").delete()
 
     library_metadata = json.load(open(LIBRARY_METADATA_PATH))
     for version_data in library_metadata["versions"]:
