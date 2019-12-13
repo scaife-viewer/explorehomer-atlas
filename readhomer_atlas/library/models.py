@@ -7,6 +7,8 @@ from treebeard.mp_tree import MP_Node
 
 
 class Node(MP_Node):
+    # @@@ used to pivot siblings; may be possible if we hook into path field
+    idx = models.IntegerField(help_text="0-based index", blank=True, null=True)
     kind = models.CharField(max_length=255)
     urn = models.CharField(max_length=255, unique=True)
     ref = models.CharField(max_length=255, blank=True, null=True)
@@ -21,11 +23,6 @@ class Node(MP_Node):
     @property
     def name(self):
         return self.metadata.get("work_title")
-
-    @property
-    def idx(self):
-        qs = self.get_root().get_descendants().filter(depth=self.depth)
-        return list(qs).index(self)
 
     @property
     def position(self):

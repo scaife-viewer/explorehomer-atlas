@@ -1,5 +1,6 @@
 import json
 import os
+from collections import defaultdict
 
 from django.conf import settings
 
@@ -28,7 +29,13 @@ def _destructure_ref(reference):
     ]
 
 
-def _generate_branch(line, nodes, root_node):
+def _get_node_idx(kind, idx_lookup):
+    idx = idx_lookup[kind]
+    idx_lookup[kind] += 1
+    return idx
+
+
+def _generate_branch(line, nodes, root_node, idx_lookup):
     ref, tokens = line.strip().split(maxsplit=1)
     _, textpart_ref = ref.split(".", maxsplit=1)
 
@@ -38,7 +45,12 @@ def _generate_branch(line, nodes, root_node):
         node = nodes.get(key)
         if node is None:
             kind, ref = key
-            data = {"kind": kind, "urn": f"{root_node.urn}{ref}", "ref": ref}
+            data = {
+                "kind": kind,
+                "urn": f"{root_node.urn}{ref}",
+                "ref": ref,
+                "idx": _get_node_idx(kind, idx_lookup),
+            }
             if key == refs[-1]:
                 data.update({"text_content": tokens})
             node = parent.add_child(**data)
@@ -51,10 +63,11 @@ def _import_version(data):
     )
 
     nodes = {}
+    idx_counters = defaultdict(int)
     full_content_path = os.path.join(LIBRARY_DATA_PATH, data["content_path"])
     with open(full_content_path, "r") as f:
         for line in f:
-            _generate_branch(line, nodes, root_node)
+            _generate_branch(line, nodes, root_node, idx_counters)
 
     created_count = root_node.get_descendant_count()
     print(f"{root_node.name}: created {created_count + 1} nodes")
