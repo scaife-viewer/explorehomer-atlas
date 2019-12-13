@@ -9,16 +9,10 @@ Make sure you are using a virtual environment of some sort (e.g. `virtualenv` or
 pip install -r requirements-dev.txt
 ```
 
-Create a PostgreSQL database `readhomer_atlas`
-
-```
-createdb readhomer_atlas
-```
-
 Populate the database:
 
 ```
-./manage.py migrate
+./manage.py prepare_db
 ./manage.py loaddata sites
 ```
 
@@ -29,18 +23,10 @@ Run the Django dev server:
 
 Browse to http://localhost:8000/
 
-## Loading data
-
 Create a superuser:
 
 ```
 ./manage.py createsuperuser
-```
-
-Run the `import_versions` script:
-
-```
-python manage.py shell -c 'from readhomer_atlas.library.importers import import_versions; import_versions();'
 ```
 
 Browse to `/admin/library/`
@@ -69,16 +55,30 @@ Retrieve a list of versions
 Retrieve books within a particular version:
 ```
 {
-  books(version_Urn: "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2") {
+  textParts(urn_Startswith: "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:", depth: 2) {
     edges {
       node {
-        id
-        label
+        ref
       }
     }
     pageInfo {
       hasNextPage
       endCursor
+    }
+  }
+}
+```
+
+Retrieve text part by its URN:
+```
+{
+  textParts(urn: "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1.1") {
+    edges {
+      node {
+        ref
+        textContent
+        displayFormat
+      }
     }
   }
 }
@@ -87,11 +87,27 @@ Retrieve books within a particular version:
 Retrieve lines within a book within a particular version:
 ```
 {
-  lines(version_Urn: "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2", book_Position: 1) {
+  textParts(urn_Startswith: "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:2.", first: 5) {
     edges {
       node {
+        ref
+        textContent
+        displayFormat
+      }
+    }
+  }
+}
+```
+
+Page through text parts ten at a time:
+```
+{
+  textParts(urn_Startswith: "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:", depth:3, first: 10) {
+    edges {
+      cursor
+      node {
         id
-        label
+        ref
         textContent
       }
     }
@@ -103,30 +119,12 @@ Retrieve lines within a book within a particular version:
 }
 ```
 
-Page through a version ten lines at a time:
-```
-{
-  lines(version_Urn: "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2", first:10) {
-    edges {
-      cursor
-      node {
-        id
-        label
-        textContent
-      }
-    }
-    pageInfo {
-      hasNextPage
-      endCursor
-    }
-  }
-}
 ```
 
 and then the next ten lines after that (using the `endCursor` value for `after` )
 ```
 {
-  lines(version_Urn: "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2", first:10, after: "YXJyYXljb25uZWN0aW9uOjk=") {
+  textParts(urn_Startswith: "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:", depth:3, first: 10, after: "YXJyYXljb25uZWN0aW9uOjk=") {
     edges {
       cursor
       node {
