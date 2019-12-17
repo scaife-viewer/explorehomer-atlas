@@ -121,7 +121,7 @@ class VersionNode(TextPartNode):
 
     @classmethod
     def get_queryset(cls, queryset, info):
-        return queryset.filter(kind="Version")
+        return queryset.filter(kind="version")
 
 
 # @@@ we might share parts of this reference filter to TextPartFilterSet
