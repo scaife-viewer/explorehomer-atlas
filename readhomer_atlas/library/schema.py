@@ -277,11 +277,13 @@ class AbstractTextPartNode(DjangoObjectType):
 
     @classmethod
     def __init_subclass_with_meta__(cls, **meta_options):
-        meta_options.update({
-            "model": TextPart,
-            "interfaces": (relay.Node,),
-            "filterset_class": TextPartFilterSet,
-        })
+        meta_options.update(
+            {
+                "model": TextPart,
+                "interfaces": (relay.Node,),
+                "filterset_class": TextPartFilterSet,
+            }
+        )
         super().__init_subclass_with_meta__(**meta_options)
 
 

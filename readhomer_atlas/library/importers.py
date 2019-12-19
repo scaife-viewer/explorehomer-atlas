@@ -58,7 +58,7 @@ class CTSImporter:
             if kind in self.citation_scheme:
                 ref_index = self.citation_scheme.index(kind)
                 ref = ".".join(nodes[-len(self.citation_scheme) :][: ref_index + 1])
-                data.update({"ref": ref})
+                data.update({"ref": ref, "rank": ref_index + 1})
                 if kind == self.citation_scheme[-1]:
                     data.update({"text_content": tokens})
 

@@ -13,6 +13,7 @@ class Node(MP_Node):
     kind = models.CharField(max_length=255)
     urn = models.CharField(max_length=255, unique=True)
     ref = models.CharField(max_length=255, blank=True, null=True)
+    rank = models.IntegerField(blank=True, null=True)
     text_content = models.TextField(blank=True, null=True)
     metadata = JSONField(default=dict, blank=True, null=True)
 
@@ -28,8 +29,3 @@ class Node(MP_Node):
     @property
     def position(self):
         return list(self.get_siblings()).index(self)
-
-    @property
-    def rank(self):
-        # TODO: What should this be now?
-        raise NotImplementedError()
