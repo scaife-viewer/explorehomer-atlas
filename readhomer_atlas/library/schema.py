@@ -11,6 +11,26 @@ from .models import Node as TextPart
 from .utils import get_chunker
 
 
+def extract_version_urn_and_ref(value):
+    dirty_version_urn, ref = value.rsplit(":", maxsplit=1)
+    # restore the trailing :
+    version_urn = f"{dirty_version_urn}:"
+    return version_urn, ref
+
+
+def filter_via_ref_predicate(instance, queryset, predicate):
+    # we need a sequential identifier to do the range
+    # unless there is something else we can do with siblings / slicing
+    # within treebeard.  `path` might work too, but having `idx`
+    # also allows us to do simple integer math as-needed
+    subquery = queryset.filter(predicate).aggregate(min=Min("idx"), max=Max("idx"))
+    # if not subquery:
+    #     raise ValueError(f"Invalid reference: {value}")
+
+    queryset = queryset.filter(idx__gte=subquery["min"], idx__lte=subquery["max"])
+    return queryset
+
+
 class LimitedConnectionField(DjangoFilterConnectionField):
     """
     Ensures that queries without `first` or `last` return up to
@@ -48,154 +68,6 @@ class LimitedConnectionField(DjangoFilterConnectionField):
             info,
             **resolver_kwargs,
         )
-
-
-def extract_version_urn_and_ref(value):
-    dirty_version_urn, ref = value.rsplit(":", maxsplit=1)
-    # restore the trailing :
-    version_urn = f"{dirty_version_urn}:"
-    return version_urn, ref
-
-
-def filter_via_ref_predicate(instance, queryset, predicate):
-    # we need a sequential identifier to do the range
-    # unless there is something else we can do with siblings / slicing
-    # within treebeard.  `path` might work too, but having `idx`
-    # also allows us to do simple integer math as-needed
-    subquery = queryset.filter(predicate).aggregate(min=Min("idx"), max=Max("idx"))
-    # if not subquery:
-    #     raise ValueError(f"Invalid reference: {value}")
-
-    queryset = queryset.filter(idx__gte=subquery["min"], idx__lte=subquery["max"])
-    return queryset
-
-
-class TextPartFilterSet(django_filters.FilterSet):
-    reference = django_filters.CharFilter(method="reference_filter")
-
-    def reference_filter(self, queryset, name, value):
-        version_urn, ref = extract_version_urn_and_ref(value)
-        # @@@ max_depth could be normed on the Version
-        # or derived from settings.NODE_HIERARCHY, depending on how
-        # we land "kind" naming
-        # max_depth = version.get_descendants().last().depth
-        start, end = ref.split("-")
-        refs = [start]
-        if end:
-            refs.append(end)
-        predicate = Q(ref__in=refs)
-        queryset = queryset.filter(
-            urn__startswith=version_urn, depth=len(start.split(".")) + 1
-        )
-        return filter_via_ref_predicate(self, queryset, predicate)
-
-    class Meta:
-        model = TextPart
-        fields = {
-            "urn": ["exact", "startswith"],
-            "ref": ["exact", "startswith"],
-            "depth": ["exact", "lt", "gt"],
-            "kind": ["exact"],
-            "idx": ["exact"],
-        }
-
-
-class TextPartNode(DjangoObjectType):
-    label = String()
-    name = String()
-    metadata = generic.GenericScalar()
-
-    class Meta:
-        model = TextPart
-        interfaces = (relay.Node,)
-        filterset_class = TextPartFilterSet
-
-
-class VersionNode(TextPartNode):
-
-    # @@@ refactor to derive Meta from TextPartNode
-    class Meta:
-        model = TextPart
-        interfaces = (relay.Node,)
-        filterset_class = TextPartFilterSet
-
-    @classmethod
-    def get_queryset(cls, queryset, info):
-        return queryset.filter(kind="version")
-
-
-# @@@ we might share parts of this reference filter to TextPartFilterSet
-class PassageTextPartFilterSet(django_filters.FilterSet):
-    reference = django_filters.CharFilter(method="reference_filter")
-
-    class Meta:
-        model = TextPart
-        fields = []
-
-    def _add_passage_to_context(self, reference):
-        # @@@ instance.request is an alias for info.context and used to store
-        # context data across filtersets
-        self.request.passage = dict(urn=reference)
-
-        version_urn, ref = extract_version_urn_and_ref(reference)
-        try:
-            version = TextPart.objects.get(urn=version_urn)
-        except TextPart.DoesNotExist:
-            raise Exception(f"{version_urn} was not found.")
-
-        self.request.passage["version"] = version
-
-    def _build_predicate(self, queryset, ref, max_depth):
-        predicate = Q()
-        if not ref:
-            # @@@ get all the text parts in the work; do we want to support this
-            # or should we just return the first text part?
-            start = queryset.first().ref
-            end = queryset.last().ref
-        else:
-            try:
-                start, end = ref.split("-")
-            except ValueError:
-                start = end = ref
-
-        # @@@ still need to validate reference based on the depth
-        # start_book, start_line = instance._resolve_ref(start)
-        # end_book, end_line = instance._resolve_ref(end)
-        # the validation might be done through treebeard; for now
-        # going to avoid the queries at this time
-
-        max_rank = max_depth - 1
-        if start:
-            if len(start.split(".")) == max_rank:
-                condition = Q(ref=start)
-            else:
-                condition = Q(ref__istartswith=f"{start}.")
-            predicate.add(condition, Q.OR)
-        if end:
-            if len(end.split(".")) == max_rank:
-                condition = Q(ref=end)
-            else:
-                condition = Q(ref__istartswith=f"{end}.")
-            predicate.add(condition, Q.OR)
-        if not start or not end:
-            raise ValueError(f"Invalid reference: {ref}")
-
-        return predicate
-
-    def reference_filter(self, queryset, name, value):
-        self._add_passage_to_context(value)
-
-        # @@@ max_depth could be normed on the Version
-        # or derived from settings.NODE_HIERARCHY, depending on how
-        # we land "kind" naming
-        # max_depth = version.get_descendants().last().depth
-        max_depth = 3
-        queryset = (
-            self.request.passage["version"].get_descendants().filter(depth=max_depth)
-        )
-        _, ref = value.rsplit(":", maxsplit=1)
-        predicate = self._build_predicate(queryset, ref, max_depth)
-        return filter_via_ref_predicate(self, queryset, predicate)
 
 
 class PassageTextPartConnection(Connection):
@@ -291,14 +163,146 @@ class PassageTextPartConnection(Connection):
         return camelize(data)
 
 
+class TextPartFilterSet(django_filters.FilterSet):
+    reference = django_filters.CharFilter(method="reference_filter")
+
+    def reference_filter(self, queryset, name, value):
+        version_urn, ref = extract_version_urn_and_ref(value)
+        # @@@ max_depth could be normed on the Version
+        # or derived from settings.NODE_HIERARCHY, depending on how
+        # we land "kind" naming
+        # max_depth = version.get_descendants().last().depth
+        start, end = ref.split("-")
+        refs = [start]
+        if end:
+            refs.append(end)
+        predicate = Q(ref__in=refs)
+        queryset = queryset.filter(
+            urn__startswith=version_urn, depth=len(start.split(".")) + 1
+        )
+        return filter_via_ref_predicate(self, queryset, predicate)
+
+    class Meta:
+        model = TextPart
+        fields = {
+            "urn": ["exact", "startswith"],
+            "ref": ["exact", "startswith"],
+            "depth": ["exact", "lt", "gt"],
+            "kind": ["exact"],
+            "idx": ["exact"],
+        }
+
+
+# @@@ we might share parts of this reference filter to TextPartFilterSet
+class PassageTextPartFilterSet(django_filters.FilterSet):
+    reference = django_filters.CharFilter(method="reference_filter")
+
+    class Meta:
+        model = TextPart
+        fields = []
+
+    def _add_passage_to_context(self, reference):
+        # @@@ instance.request is an alias for info.context and used to store
+        # context data across filtersets
+        self.request.passage = dict(urn=reference)
+
+        version_urn, ref = extract_version_urn_and_ref(reference)
+        try:
+            version = TextPart.objects.get(urn=version_urn)
+        except TextPart.DoesNotExist:
+            raise Exception(f"{version_urn} was not found.")
+
+        self.request.passage["version"] = version
+
+    def _build_predicate(self, queryset, ref, max_depth):
+        predicate = Q()
+        if not ref:
+            # @@@ get all the text parts in the work; do we want to support this
+            # or should we just return the first text part?
+            start = queryset.first().ref
+            end = queryset.last().ref
+        else:
+            try:
+                start, end = ref.split("-")
+            except ValueError:
+                start = end = ref
+
+        # @@@ still need to validate reference based on the depth
+        # start_book, start_line = instance._resolve_ref(start)
+        # end_book, end_line = instance._resolve_ref(end)
+        # the validation might be done through treebeard; for now
+        # going to avoid the queries at this time
+
+        max_rank = max_depth - 1
+        if start:
+            if len(start.split(".")) == max_rank:
+                condition = Q(ref=start)
+            else:
+                condition = Q(ref__istartswith=f"{start}.")
+            predicate.add(condition, Q.OR)
+        if end:
+            if len(end.split(".")) == max_rank:
+                condition = Q(ref=end)
+            else:
+                condition = Q(ref__istartswith=f"{end}.")
+            predicate.add(condition, Q.OR)
+        if not start or not end:
+            raise ValueError(f"Invalid reference: {ref}")
+
+        return predicate
+
+    def reference_filter(self, queryset, name, value):
+        self._add_passage_to_context(value)
+
+        # @@@ max_depth could be normed on the Version
+        # or derived from settings.NODE_HIERARCHY, depending on how
+        # we land "kind" naming
+        # max_depth = version.get_descendants().last().depth
+        max_depth = 3
+        queryset = (
+            self.request.passage["version"].get_descendants().filter(depth=max_depth)
+        )
+        _, ref = value.rsplit(":", maxsplit=1)
+        predicate = self._build_predicate(queryset, ref, max_depth)
+        return filter_via_ref_predicate(self, queryset, predicate)
+
+
+class AbstractTextPartNode(DjangoObjectType):
+    label = String()
+    name = String()
+    metadata = generic.GenericScalar()
+
+    class Meta:
+        abstract = True
+
+    @classmethod
+    def __init_subclass_with_meta__(cls, **meta_options):
+        meta_options.update({
+            "model": TextPart,
+            "interfaces": (relay.Node,),
+            "filterset_class": TextPartFilterSet,
+        })
+        super().__init_subclass_with_meta__(**meta_options)
+
+
+class TextPartNode(AbstractTextPartNode):
+    pass
+
+
+class VersionNode(AbstractTextPartNode):
+    @classmethod
+    def get_queryset(cls, queryset, info):
+        return queryset.filter(kind="version")
+
+
 class PassageTextPartNode(DjangoObjectType):
     label = String()
 
     class Meta:
         model = TextPart
         interfaces = (relay.Node,)
-        filterset_class = PassageTextPartFilterSet
         connection_class = PassageTextPartConnection
+        filterset_class = PassageTextPartFilterSet
 
 
 class Query(ObjectType):

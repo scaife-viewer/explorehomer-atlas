@@ -31,4 +31,5 @@ class Node(MP_Node):
 
     @property
     def rank(self):
-        return self.depth - 1
+        # TODO: What should this be now?
+        raise NotImplementedError()
