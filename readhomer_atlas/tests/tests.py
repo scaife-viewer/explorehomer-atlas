@@ -2,10 +2,12 @@ import copy
 import io
 from unittest import mock
 
+import hypothesis
 import pytest
 
 from readhomer_atlas.library.importers import CTSImporter
 from readhomer_atlas.library.models import Node
+from readhomer_atlas.tests.strategies import URNs
 
 
 VERSION_DATA = {
@@ -31,6 +33,18 @@ PASSAGE = io.StringIO("""
     Il.1.7 Ἀτρεΐδης τε ἄναξ ἀνδρῶν καὶ δῖος Ἀχιλλεύς.
 """.strip("\n"))
 # fmt: on
+
+
+@hypothesis.given(URNs.cts_urns())
+def test_destructure__property(node_urn):
+    tokens = "Some tokens"
+    _, passage = node_urn.rsplit(":", maxsplit=1)
+    scheme = [f"x{idx + 1}" for idx, _ in enumerate(passage.split("."))]
+    version_data = copy.deepcopy(VERSION_DATA)
+    version_data["metadata"].update({"citation_scheme": scheme})
+    nodes = CTSImporter(version_data).destructure_node(node_urn, tokens)
+
+    raise NotImplementedError()
 
 
 def test_destructure():

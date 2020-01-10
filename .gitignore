@@ -7,3 +7,4 @@ site_media/
 Pipfile
 Pipfile.lock
 .venv/
+.hypothesis/

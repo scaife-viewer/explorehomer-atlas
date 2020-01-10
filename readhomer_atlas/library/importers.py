@@ -21,10 +21,11 @@ class CTSImporter:
 
     URN_SCHEME = ["nid", "namespace", "textgroup", "work", "version"]
 
+    # TODO: How is this handling range references?
     def __init__(self, version_data, nodes=dict()):
         self.version_data = version_data
         self.nodes = nodes
-        self.urn = self.version_data["urn"]
+        self.urn = self.version_data["urn"].strip()
         self.metadata = self.version_data["metadata"]
         self.citation_scheme = self.metadata["citation_scheme"]
         self.full_scheme = [*self.URN_SCHEME, *self.citation_scheme]
