@@ -13,21 +13,19 @@ from .utils import get_chunker
 
 def extract_version_urn_and_ref(value):
     dirty_version_urn, ref = value.rsplit(":", maxsplit=1)
-    # restore the trailing :
+    # Restore the trailing ":".
     version_urn = f"{dirty_version_urn}:"
     return version_urn, ref
 
 
 def filter_via_ref_predicate(instance, queryset, predicate):
-    # we need a sequential identifier to do the range
-    # unless there is something else we can do with siblings / slicing
-    # within treebeard.  `path` might work too, but having `idx`
-    # also allows us to do simple integer math as-needed
-    subquery = queryset.filter(predicate).aggregate(min=Min("idx"), max=Max("idx"))
-    # if not subquery:
-    #     raise ValueError(f"Invalid reference: {value}")
-
-    queryset = queryset.filter(idx__gte=subquery["min"], idx__lte=subquery["max"])
+    # We need a sequential identifier to do the range unless there is something
+    # else we can do with siblings / slicing within treebeard. Using `path`
+    # might work too, but having `idx` also allows us to do simple integer math
+    # as-needed.
+    if queryset.exists():
+        subquery = queryset.filter(predicate).aggregate(min=Min("idx"), max=Max("idx"))
+        queryset = queryset.filter(idx__gte=subquery["min"], idx__lte=subquery["max"])
     return queryset
 
 
@@ -168,10 +166,6 @@ class TextPartFilterSet(django_filters.FilterSet):
 
     def reference_filter(self, queryset, name, value):
         version_urn, ref = extract_version_urn_and_ref(value)
-        # @@@ max_depth could be normed on the Version
-        # or derived from settings.NODE_HIERARCHY, depending on how
-        # we land "kind" naming
-        # max_depth = version.get_descendants().last().depth
         start, end = ref.split("-")
         refs = [start]
         if end:
@@ -214,7 +208,7 @@ class PassageTextPartFilterSet(django_filters.FilterSet):
 
         self.request.passage["version"] = version
 
-    def _build_predicate(self, queryset, ref, max_depth):
+    def _build_predicate(self, queryset, ref, max_rank):
         predicate = Q()
         if not ref:
             # @@@ get all the text parts in the work; do we want to support this
@@ -232,8 +226,6 @@ class PassageTextPartFilterSet(django_filters.FilterSet):
         # end_book, end_line = instance._resolve_ref(end)
         # the validation might be done through treebeard; for now
         # going to avoid the queries at this time
-
-        max_rank = max_depth - 1
         if start:
             if len(start.split(".")) == max_rank:
                 condition = Q(ref=start)
@@ -254,16 +246,14 @@ class PassageTextPartFilterSet(django_filters.FilterSet):
     def reference_filter(self, queryset, name, value):
         self._add_passage_to_context(value)
 
-        # @@@ max_depth could be normed on the Version
-        # or derived from settings.NODE_HIERARCHY, depending on how
-        # we land "kind" naming
-        # max_depth = version.get_descendants().last().depth
-        max_depth = 3
-        queryset = (
-            self.request.passage["version"].get_descendants().filter(depth=max_depth)
-        )
+        version = self.request.passage["version"]
+        citation_scheme = version.metadata["citation_scheme"]
+        max_depth = version.get_descendants().last().depth
+        max_rank = len(citation_scheme)
+
+        queryset = version.get_descendants().filter(depth=max_depth)
         _, ref = value.rsplit(":", maxsplit=1)
-        predicate = self._build_predicate(queryset, ref, max_depth)
+        predicate = self._build_predicate(queryset, ref, max_rank)
         return filter_via_ref_predicate(self, queryset, predicate)
 
 
@@ -291,12 +281,6 @@ class TextPartNode(AbstractTextPartNode):
     pass
 
 
-class VersionNode(AbstractTextPartNode):
-    @classmethod
-    def get_queryset(cls, queryset, info):
-        return queryset.filter(kind="version")
-
-
 class PassageTextPartNode(DjangoObjectType):
     label = String()
 
@@ -305,6 +289,12 @@ class PassageTextPartNode(DjangoObjectType):
         interfaces = (relay.Node,)
         connection_class = PassageTextPartConnection
         filterset_class = PassageTextPartFilterSet
+
+
+class VersionNode(AbstractTextPartNode):
+    @classmethod
+    def get_queryset(cls, queryset, info):
+        return queryset.filter(kind="version")
 
 
 class Query(ObjectType):

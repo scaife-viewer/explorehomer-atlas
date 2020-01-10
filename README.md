@@ -21,7 +21,7 @@ Run the Django dev server:
 ./manage.py runserver
 ```
 
-Browse to http://localhost:8000/
+Browse to http://localhost:8000/.
 
 Create a superuser:
 

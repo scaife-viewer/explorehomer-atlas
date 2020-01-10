@@ -1,5 +1,4 @@
 import copy
-import io
 from unittest import mock
 
 import hypothesis
@@ -10,6 +9,19 @@ from readhomer_atlas.library.models import Node
 from readhomer_atlas.tests.strategies import URNs
 
 
+# fmt: off
+PASSAGE = """
+    Il.1.1 μῆνιν ἄειδε θεὰ Πηληϊάδεω Ἀχιλῆος
+    Il.1.2 οὐλομένην, ἣ μυρίʼ Ἀχαιοῖς ἄλγεʼ ἔθηκε,
+    Il.1.3 πολλὰς δʼ ἰφθίμους ψυχὰς Ἄϊδι προΐαψεν
+    Il.1.4 ἡρώων, αὐτοὺς δὲ ἑλώρια τεῦχε κύνεσσιν
+    Il.1.5 οἰωνοῖσί τε πᾶσι, Διὸς δʼ ἐτελείετο βουλή,
+    Il.1.6 ἐξ οὗ δὴ τὰ πρῶτα διαστήτην ἐρίσαντε
+    Il.1.7 Ἀτρεΐδης τε ἄναξ ἀνδρῶν καὶ δῖος Ἀχιλλεύς.
+""".strip("\n")
+# fmt: on
+
+
 VERSION_DATA = {
     "urn": "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:",
     "content_path": "tlg0012.tlg001.perseus-grc2.txt",
@@ -18,33 +30,39 @@ VERSION_DATA = {
         "work_urn": "urn:cts:greekLit:tlg0012.tlg001:",
         "type": "edition",
         "first_passage_urn": "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1.1-1.7",
-        "citation_scheme": ["book", "line"],
+        "citation_scheme": ["rank_1", "rank_2"],
     },
 }
-
-# fmt: off
-PASSAGE = io.StringIO("""
-    Il.1.1 μῆνιν ἄειδε θεὰ Πηληϊάδεω Ἀχιλῆος
-    Il.1.2 οὐλομένην, ἣ μυρίʼ Ἀχαιοῖς ἄλγεʼ ἔθηκε,
-    Il.1.3 πολλὰς δʼ ἰφθίμους ψυχὰς Ἄϊδι προΐαψεν
-    Il.1.4 ἡρώων, αὐτοὺς δὲ ἑλώρια τεῦχε κύνεσσιν
-    Il.1.5 οἰωνοῖσί τε πᾶσι, Διὸς δʼ ἐτελείετο βουλή,
-    Il.1.6 ἐξ οὗ δὴ τὰ πρῶτα διαστήτην ἐρίσαντε
-    Il.1.7 Ἀτρεΐδης τε ἄναξ ἀνδρῶν καὶ δῖος Ἀχιλλεύς.
-""".strip("\n"))
-# fmt: on
 
 
 @hypothesis.given(URNs.cts_urns())
 def test_destructure__property(node_urn):
     tokens = "Some tokens"
-    _, passage = node_urn.rsplit(":", maxsplit=1)
-    scheme = [f"x{idx + 1}" for idx, _ in enumerate(passage.split("."))]
+    _, work, passage = node_urn.rsplit(":", maxsplit=2)
+    scheme = [f"rank_{idx + 1}" for idx, _ in enumerate(passage.split("."))]
     version_data = copy.deepcopy(VERSION_DATA)
     version_data["metadata"].update({"citation_scheme": scheme})
+
     nodes = CTSImporter(version_data).destructure_node(node_urn, tokens)
 
-    raise NotImplementedError()
+    has_exemplar = len(work.split(".")) == 4
+    if has_exemplar:
+        assert len(nodes) - len(scheme) == 6
+    else:
+        assert len(nodes) - len(scheme) == 5
+
+    urn_root, _ = node_urn.rsplit(":", maxsplit=1)
+    passage_nodes = nodes[-len(scheme):]
+    for idx, node in enumerate(passage_nodes):
+        assert node["urn"] == f"{urn_root}:{node['ref']}"
+        assert node["rank"] == idx + 1
+        assert node["kind"] == scheme[idx]
+        if idx > 0:
+            assert node["ref"].startswith(f"{passage_nodes[idx - 1]['ref']}.")
+        if idx == passage_nodes.index(passage_nodes[-1]):
+            assert node["text_content"] == tokens
+        else:
+            assert "text_content" not in node
 
 
 def test_destructure():
@@ -62,13 +80,13 @@ def test_destructure():
             "metadata": VERSION_DATA["metadata"],
         },
         {
-            "kind": "book",
+            "kind": "rank_1",
             "urn": "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1",
             "ref": "1",
             "rank": 1,
         },
         {
-            "kind": "line",
+            "kind": "rank_2",
             "urn": "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1.1",
             "ref": "1.1",
             "text_content": tokens,
@@ -79,7 +97,7 @@ def test_destructure():
 
 def test_destructure_alphanumeric():
     node_urn = "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1.2.a.3"
-    scheme = ["a", "b", "c", "d"]
+    scheme = ["rank_1", "rank_2", "rank_3", "rank_4"]
     tokens = "Some tokens"
     version_data = copy.deepcopy(VERSION_DATA)
     version_data["metadata"].update({"citation_scheme": scheme})
@@ -95,25 +113,25 @@ def test_destructure_alphanumeric():
             "metadata": version_data["metadata"],
         },
         {
-            "kind": "a",
+            "kind": "rank_1",
             "urn": "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1",
             "ref": "1",
             "rank": 1,
         },
         {
-            "kind": "b",
+            "kind": "rank_2",
             "urn": "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1.2",
             "ref": "1.2",
             "rank": 2,
         },
         {
-            "kind": "c",
+            "kind": "rank_3",
             "urn": "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1.2.a",
             "ref": "1.2.a",
             "rank": 3,
         },
         {
-            "kind": "d",
+            "kind": "rank_4",
             "urn": "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1.2.a.3",
             "ref": "1.2.a.3",
             "text_content": tokens,
@@ -122,12 +140,15 @@ def test_destructure_alphanumeric():
     ]
 
 
-@mock.patch("builtins.open", new_callable=mock.mock_open)
+@pytest.mark.django_db
+@mock.patch(
+    "readhomer_atlas.library.importers.open",
+    new_callable=mock.mock_open,
+    read_data=PASSAGE,
+)
 @mock.patch("readhomer_atlas.library.importers.Node.objects.get")
 @mock.patch.object(Node, "add_child")
-@pytest.mark.django_db
 def test_importer(mock_add, mock_get, mock_open):
-    mock_open.side_effect = [PASSAGE]
     CTSImporter(VERSION_DATA).apply()
 
     assert mock_add.mock_calls == [
@@ -147,7 +168,7 @@ def test_importer(mock_add, mock_get, mock_open):
                 "work_urn": "urn:cts:greekLit:tlg0012.tlg001:",
                 "type": "edition",
                 "first_passage_urn": "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1.1-1.7",
-                "citation_scheme": ["book", "line"],
+                "citation_scheme": ["rank_1", "rank_2"],
             },
             urn="urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:",
         ),
@@ -157,7 +178,7 @@ def test_importer(mock_add, mock_get, mock_open):
         .add_child()
         .add_child(
             idx=0,
-            kind="book",
+            kind="rank_1",
             ref="1",
             rank=1,
             urn="urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1",
@@ -169,7 +190,7 @@ def test_importer(mock_add, mock_get, mock_open):
         .add_child()
         .add_child(
             idx=0,
-            kind="line",
+            kind="rank_2",
             ref="1.1",
             rank=2,
             text_content="μῆνιν ἄειδε θεὰ Πηληϊάδεω Ἀχιλῆος",
@@ -182,7 +203,7 @@ def test_importer(mock_add, mock_get, mock_open):
         .add_child()
         .add_child(
             idx=1,
-            kind="line",
+            kind="rank_2",
             ref="1.2",
             rank=2,
             text_content="οὐλομένην, ἣ μυρίʼ Ἀχαιοῖς ἄλγεʼ ἔθηκε,",
@@ -195,7 +216,7 @@ def test_importer(mock_add, mock_get, mock_open):
         .add_child()
         .add_child(
             idx=2,
-            kind="line",
+            kind="rank_2",
             ref="1.3",
             rank=2,
             text_content="πολλὰς δʼ ἰφθίμους ψυχὰς Ἄϊδι προΐαψεν",
@@ -208,7 +229,7 @@ def test_importer(mock_add, mock_get, mock_open):
         .add_child()
         .add_child(
             idx=3,
-            kind="line",
+            kind="rank_2",
             ref="1.4",
             rank=2,
             text_content="ἡρώων, αὐτοὺς δὲ ἑλώρια τεῦχε κύνεσσιν",
@@ -221,7 +242,7 @@ def test_importer(mock_add, mock_get, mock_open):
         .add_child()
         .add_child(
             idx=4,
-            kind="line",
+            kind="rank_2",
             ref="1.5",
             rank=2,
             text_content="οἰωνοῖσί τε πᾶσι, Διὸς δʼ ἐτελείετο βουλή,",
@@ -234,7 +255,7 @@ def test_importer(mock_add, mock_get, mock_open):
         .add_child()
         .add_child(
             idx=5,
-            kind="line",
+            kind="rank_2",
             ref="1.6",
             rank=2,
             text_content="ἐξ οὗ δὴ τὰ πρῶτα διαστήτην ἐρίσαντε",
@@ -247,7 +268,7 @@ def test_importer(mock_add, mock_get, mock_open):
         .add_child()
         .add_child(
             idx=6,
-            kind="line",
+            kind="rank_2",
             ref="1.7",
             rank=2,
             text_content="Ἀτρεΐδης τε ἄναξ ἀνδρῶν καὶ δῖος Ἀχιλλεύς.",
@@ -255,4 +276,155 @@ def test_importer(mock_add, mock_get, mock_open):
         ),
     ]
     assert mock_get.mock_calls[0] == mock.call(urn=VERSION_DATA["urn"])
+    assert mock_get.mock_calls[1] == mock.call().get_descendant_count()
+
+
+@pytest.mark.xfail
+@mock.patch(
+    "readhomer_atlas.library.importers.open",
+    new_callable=mock.mock_open,
+    read_data=PASSAGE,
+)
+@mock.patch("readhomer_atlas.library.importers.Node.objects.get")
+@mock.patch.object(Node, "add_child")
+@pytest.mark.django_db
+def test_importer_exemplar(mock_add, mock_get, mock_open):
+    version_data = copy.deepcopy(VERSION_DATA)
+    version_data.update({"urn": "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2.card:"})
+    CTSImporter(version_data).apply()
+
+    assert mock_add.mock_calls == [
+        mock.call(idx=0, kind="namespace", urn="urn:cts:greekLit:"),
+        mock.call().add_child(idx=0, kind="textgroup", urn="urn:cts:greekLit:tlg0012:"),
+        mock.call()
+        .add_child()
+        .add_child(idx=0, kind="work", urn="urn:cts:greekLit:tlg0012.tlg001:"),
+        mock.call()
+        .add_child()
+        .add_child()
+        .add_child(
+            idx=0,
+            kind="version",
+            metadata={
+                "work_title": "Iliad",
+                "work_urn": "urn:cts:greekLit:tlg0012.tlg001:",
+                "type": "edition",
+                "first_passage_urn": "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1.1-1.7",
+                "citation_scheme": ["rank_1", "rank_2"],
+            },
+            urn="urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:",
+        ),
+        mock.call()
+        .add_child()
+        .add_child()
+        .add_child()
+        .add_child(
+            idx=0,
+            kind="exemplar",
+            urn="urn:cts:greekLit:tlg0012.tlg001.perseus-grc2.card:",
+        ),
+        mock.call()
+        .add_child()
+        .add_child()
+        .add_child()
+        .add_child(
+            idx=0,
+            kind="rank_1",
+            ref="1",
+            rank=1,
+            urn="urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1",
+        ),
+        mock.call()
+        .add_child()
+        .add_child()
+        .add_child()
+        .add_child()
+        .add_child(
+            idx=0,
+            kind="rank_2",
+            ref="1.1",
+            rank=2,
+            text_content="μῆνιν ἄειδε θεὰ Πηληϊάδεω Ἀχιλῆος",
+            urn="urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1.1",
+        ),
+        mock.call()
+        .add_child()
+        .add_child()
+        .add_child()
+        .add_child()
+        .add_child(
+            idx=1,
+            kind="rank_2",
+            ref="1.2",
+            rank=2,
+            text_content="οὐλομένην, ἣ μυρίʼ Ἀχαιοῖς ἄλγεʼ ἔθηκε,",
+            urn="urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1.2",
+        ),
+        mock.call()
+        .add_child()
+        .add_child()
+        .add_child()
+        .add_child()
+        .add_child(
+            idx=2,
+            kind="rank_2",
+            ref="1.3",
+            rank=2,
+            text_content="πολλὰς δʼ ἰφθίμους ψυχὰς Ἄϊδι προΐαψεν",
+            urn="urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1.3",
+        ),
+        mock.call()
+        .add_child()
+        .add_child()
+        .add_child()
+        .add_child()
+        .add_child(
+            idx=3,
+            kind="rank_2",
+            ref="1.4",
+            rank=2,
+            text_content="ἡρώων, αὐτοὺς δὲ ἑλώρια τεῦχε κύνεσσιν",
+            urn="urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1.4",
+        ),
+        mock.call()
+        .add_child()
+        .add_child()
+        .add_child()
+        .add_child()
+        .add_child(
+            idx=4,
+            kind="rank_2",
+            ref="1.5",
+            rank=2,
+            text_content="οἰωνοῖσί τε πᾶσι, Διὸς δʼ ἐτελείετο βουλή,",
+            urn="urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1.5",
+        ),
+        mock.call()
+        .add_child()
+        .add_child()
+        .add_child()
+        .add_child()
+        .add_child(
+            idx=5,
+            kind="rank_2",
+            ref="1.6",
+            rank=2,
+            text_content="ἐξ οὗ δὴ τὰ πρῶτα διαστήτην ἐρίσαντε",
+            urn="urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1.6",
+        ),
+        mock.call()
+        .add_child()
+        .add_child()
+        .add_child()
+        .add_child()
+        .add_child(
+            idx=6,
+            kind="rank_2",
+            ref="1.7",
+            rank=2,
+            text_content="Ἀτρεΐδης τε ἄναξ ἀνδρῶν καὶ δῖος Ἀχιλλεύς.",
+            urn="urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1.7",
+        ),
+    ]
+    assert mock_get.mock_calls[0] == mock.call(urn=version_data["urn"])
     assert mock_get.mock_calls[1] == mock.call().get_descendant_count()

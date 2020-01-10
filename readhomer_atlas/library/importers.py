@@ -19,7 +19,7 @@ class CTSImporter:
     https://cite-architecture.github.io/ctsurn_spec
     """
 
-    URN_SCHEME = ["nid", "namespace", "textgroup", "work", "version"]
+    CTS_URN_SCHEME = ["nid", "namespace", "textgroup", "work", "version"]
 
     # TODO: How is this handling range references?
     def __init__(self, version_data, nodes=dict()):
@@ -28,7 +28,6 @@ class CTSImporter:
         self.urn = self.version_data["urn"].strip()
         self.metadata = self.version_data["metadata"]
         self.citation_scheme = self.metadata["citation_scheme"]
-        self.full_scheme = [*self.URN_SCHEME, *self.citation_scheme]
         self.name = self.metadata["work_title"]
         self.idx_lookup = defaultdict(int)
         self.root = None
@@ -38,18 +37,26 @@ class CTSImporter:
         self.idx_lookup[kind] += 1
         return idx
 
+    def urn_has_exemplar(self, node_urn):
+        return len(node_urn.rsplit(":")[-2].split(".")) == 4
+
+    def get_urn_scheme(self, node_urn):
+        if self.urn_has_exemplar(node_urn):
+            return [*self.CTS_URN_SCHEME, "exemplar", *self.citation_scheme]
+        return [*self.CTS_URN_SCHEME, *self.citation_scheme]
+
     def destructure_node(self, node_urn, tokens):
         split = ["urn:cts", ":", *re.split(r"([:|.])", node_urn)[4:]]
         nodes = [node for idx, node in enumerate(split) if idx % 2 == 0]
         delimiters = [delimiter for idx, delimiter in enumerate(split) if idx % 2 == 1]
-        zipped = zip(self.full_scheme, nodes)
+        zipped = zip(self.get_urn_scheme(node_urn), nodes)
 
         node_data = []
         for idx, (kind, node) in enumerate(zipped):
             parts = nodes[: idx + 1]
             joins = [*delimiters[:idx], ""]
             urn = "".join(item for pair in zip(parts, joins) for item in pair)
-            if kind in self.URN_SCHEME:
+            if kind in self.CTS_URN_SCHEME:
                 urn = f"{urn}:"
             data = {"kind": kind, "urn": urn}
 

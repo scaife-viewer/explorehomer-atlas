@@ -26,6 +26,7 @@
 # ~ Unicode x007E
 import re
 
+
 # fmt: off
 RESERVED = "\\u0000-\\u0020" + "".join(
     "\\u{:04x}".format(ord(x)) for x in [
