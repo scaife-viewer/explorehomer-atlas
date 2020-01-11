@@ -21,7 +21,6 @@ class CTSImporter:
 
     CTS_URN_SCHEME = ["nid", "namespace", "textgroup", "work", "version"]
 
-    # TODO: How is this handling range references?
     def __init__(self, version_data, nodes=dict()):
         self.version_data = version_data
         self.nodes = nodes
