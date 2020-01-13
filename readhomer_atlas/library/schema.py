@@ -276,6 +276,15 @@ class AbstractTextPartNode(DjangoObjectType):
         )
         super().__init_subclass_with_meta__(**meta_options)
 
+    def resolve_metadata(obj, *args, **kwargs):
+        return camelize(obj.metadata)
+
+
+class VersionNode(AbstractTextPartNode):
+    @classmethod
+    def get_queryset(cls, queryset, info):
+        return queryset.filter(kind="version")
+
 
 class TextPartNode(AbstractTextPartNode):
     pass
@@ -291,12 +300,6 @@ class PassageTextPartNode(DjangoObjectType):
         filterset_class = PassageTextPartFilterSet
 
 
-class VersionNode(AbstractTextPartNode):
-    @classmethod
-    def get_queryset(cls, queryset, info):
-        return queryset.filter(kind="version")
-
-
 class Query(ObjectType):
     version = relay.Node.Field(VersionNode)
     versions = LimitedConnectionField(VersionNode)
@@ -304,5 +307,6 @@ class Query(ObjectType):
     text_part = relay.Node.Field(TextPartNode)
     text_parts = LimitedConnectionField(TextPartNode)
 
-    # no passage text part available because we will only support querying by reference
+    # No passage_text_part endpoint available here like the others because we
+    # will only support querying by reference.
     passage_text_parts = LimitedConnectionField(PassageTextPartNode)

@@ -35,6 +35,13 @@ VERSION_DATA = {
 
 @hypothesis.given(URNs.cts_urns())
 def test_destructure__property(node_urn):
+    # TODO: I realise this code is on the uglier side of things but I
+    # anticipate that when we develop our base URN abstraction as discussed it
+    # should become easier and cleaner for us to make general statements and
+    # assertions about the characteristics any particular URN during
+    # property-based testing and then we can refactor the noisier parts below.
+    # I'm also looking for a naming convention for distinguishing
+    # property-based test cases but haven't come up with any good ones yet.
     tokens = "Some tokens"
     _, work, passage = node_urn.rsplit(":", maxsplit=2)
     scheme = [f"rank_{idx + 1}" for idx, _ in enumerate(passage.split("."))]
