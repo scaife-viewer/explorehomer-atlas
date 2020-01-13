@@ -182,6 +182,7 @@ class TextPartFilterSet(django_filters.FilterSet):
             "urn": ["exact", "startswith"],
             "ref": ["exact", "startswith"],
             "depth": ["exact", "lt", "gt"],
+            "rank": ["exact", "lt", "gt"],
             "kind": ["exact"],
             "idx": ["exact"],
         }
