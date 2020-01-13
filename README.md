@@ -33,7 +33,7 @@ Browse to `/admin/library/`
 
 ## Sample Queries
 
-Retrieve a list of versions
+Retrieve a list of versions.
 ```
 {
   versions {
@@ -52,10 +52,24 @@ Retrieve a list of versions
 }
 ```
 
-Retrieve books within a particular version:
+Retrieve the first version.
 ```
 {
-  textParts(urn_Startswith: "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:", depth: 2) {
+  versions(first: 1) {
+    edges {
+      node {
+        metadata
+      }
+    }
+  }
+}
+
+```
+
+Retrieve books within a particular version.
+```
+{
+  textParts(urn_Startswith: "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:", rank: 1) {
     edges {
       node {
         ref
@@ -69,7 +83,7 @@ Retrieve books within a particular version:
 }
 ```
 
-Retrieve text part by its URN:
+Retrieve text part by its URN.
 ```
 {
   textParts(urn: "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1.1") {
@@ -77,14 +91,28 @@ Retrieve text part by its URN:
       node {
         ref
         textContent
-        displayFormat
       }
     }
   }
 }
 ```
 
-Retrieve lines within a book within a particular version:
+Retrive a passage by its URN with relevant metadata.
+```
+{
+  passageTextParts(reference: "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1-2") {
+    metadata
+    edges {
+      node {
+        ref
+        textContent
+      }
+    }
+  }
+}
+```
+
+Retrieve lines within a book within a particular version.
 ```
 {
   textParts(urn_Startswith: "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:2.", first: 5) {
@@ -92,17 +120,17 @@ Retrieve lines within a book within a particular version:
       node {
         ref
         textContent
-        displayFormat
       }
     }
   }
 }
 ```
 
-Page through text parts ten at a time:
+Page through text parts ten at a time.
 ```
+
 {
-  textParts(urn_Startswith: "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:", depth:3, first: 10) {
+  textParts(urn_Startswith: "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:", rank: 2, first: 10) {
     edges {
       cursor
       node {
@@ -121,10 +149,10 @@ Page through text parts ten at a time:
 
 ```
 
-and then the next ten lines after that (using the `endCursor` value for `after` )
+And then the next ten lines after that (use the `endCursor` value for `after`).
 ```
 {
-  textParts(urn_Startswith: "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:", depth:3, first: 10, after: "YXJyYXljb25uZWN0aW9uOjk=") {
+  textParts(urn_Startswith: "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:", rank: 3, first: 10, after: "YXJyYXljb25uZWN0aW9uOjk=") {
     edges {
       cursor
       node {
