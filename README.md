@@ -168,3 +168,11 @@ And then the next ten lines after that (use the `endCursor` value for `after`).
   }
 }
 ```
+
+## Tests
+
+Invoke tests via:
+
+```
+pytest
+```
