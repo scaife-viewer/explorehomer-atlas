@@ -25,7 +25,3 @@ class Node(MP_Node):
     @property
     def name(self):
         return self.metadata.get("work_title")
-
-    @property
-    def position(self):
-        return list(self.get_siblings()).index(self)
