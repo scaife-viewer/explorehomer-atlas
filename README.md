@@ -97,7 +97,7 @@ Retrieve text part by its URN.
 }
 ```
 
-Retrive a passage by its URN with relevant metadata.
+Retrieve a passage by its URN along with relevant metadata.
 ```
 {
   passageTextParts(reference: "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1-2") {
