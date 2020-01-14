@@ -29,7 +29,6 @@ class CTSImporter:
         self.citation_scheme = self.metadata["citation_scheme"]
         self.name = self.metadata["work_title"]
         self.idx_lookup = defaultdict(int)
-        self.root = None
 
     def get_node_idx(self, kind):
         idx = self.idx_lookup[kind]
@@ -99,7 +98,7 @@ class CTSImporter:
         created_count = Node.objects.get(
             urn=self.version_data["urn"]
         ).get_descendant_count()
-        print(f"{self.name}: {created_count + 1} leaf nodes.", file=sys.stderr)
+        print(f"{self.name}: {created_count + 1} nodes.", file=sys.stderr)
 
 
 def import_versions():
