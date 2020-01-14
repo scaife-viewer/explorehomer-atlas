@@ -35,9 +35,16 @@ jobs:
           name: lint code
           command: |
             . venv/bin/activate
-            isort readhomer_atlas/**/*.py -c
-            flake8 readhomer_atlas
+            isort -rc readhomer_atlas
             black readhomer_atlas --check --diff
+            flake8 readhomer_atlas
+
+      # tests
+      - run:
+          name: tests
+          command: |
+            . venv/bin/activate
+            pytest
 
 workflows:
   version: 2

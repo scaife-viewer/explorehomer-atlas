@@ -7,7 +7,8 @@
         "work_title": "Iliad",
         "work_urn": "urn:cts:greekLit:tlg0012.tlg001:",
         "type": "edition",
-        "first_passage_urn": "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1.1-1.7"
+        "first_passage_urn": "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1.1-1.7",
+        "citation_scheme": ["book", "line"]
       }
     },
     {
@@ -17,7 +18,8 @@
         "work_title": "Odyssey",
         "work_urn": "urn:cts:greekLit:tlg0012.tlg002:",
         "type": "edition",
-        "first_passage_urn": "urn:cts:greekLit:tlg0012.tlg002.perseus-grc2:1.1-1.10"
+        "first_passage_urn": "urn:cts:greekLit:tlg0012.tlg002.perseus-grc2:1.1-1.10",
+        "citation_scheme": ["book", "line"]
       }
     }
   ]

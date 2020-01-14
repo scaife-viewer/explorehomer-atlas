@@ -128,6 +128,7 @@ INSTALLED_APPS = [
     "corsheaders",
     "django_extensions",
     "graphene_django",
+    "treebeard",
     # project
     "readhomer_atlas",
     "readhomer_atlas.library",
@@ -179,3 +180,5 @@ ATLAS_CONFIG = dict(
         os.environ.get("ATLAS_IN_MEMORY_PASSAGE_CHUNK_MAX", 2500)
     )
 )
+
+NODE_ALPHABET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"

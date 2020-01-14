@@ -6,3 +6,5 @@ site_media/
 .vscode
 Pipfile
 Pipfile.lock
+.venv/
+.hypothesis/
