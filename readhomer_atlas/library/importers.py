@@ -21,7 +21,6 @@ class Library:
 
 
 LIBRARY_DATA_PATH = os.path.join(settings.PROJECT_ROOT, "data", "library")
-LIBRARY_METADATA_PATH = os.path.join(LIBRARY_DATA_PATH, "metadata.json")
 
 
 class CTSImporter:
@@ -42,13 +41,14 @@ class CTSImporter:
             "first_passage_urn": self.version_data["firstPassageUrn"],
         }
 
-    def __init__(self, version_data, nodes=dict()):
+    def __init__(self, library, version_data, nodes=dict()):
+        self.library = library
         self.version_data = version_data
         self.nodes = nodes
         self.urn = self.version_data["urn"].strip()
         self.work_urn = URN(self.urn).upTo(URN.WORK)
         self.name = get_first_value_for_language(
-            library.works[self.work_urn]["title"], "eng"
+            self.library.works[self.work_urn]["title"], "eng"
         )
         self.citation_scheme = self.version_data["citationScheme"]
         self.metadata = self.get_version_metadata()
@@ -115,7 +115,7 @@ class CTSImporter:
                 self.nodes[data["urn"]] = node
 
     def apply(self):
-        full_content_path = library.versions[self.urn]["path"]
+        full_content_path = self.library.versions[self.urn]["path"]
         with open(full_content_path, "r") as f:
             for line in f:
                 self.generate_branch(line)
@@ -163,9 +163,7 @@ def resolve_library():
                         raise FileNotFoundError(version_path)
                     else:
                         versions[version["urn"]] = {"path": version_path, **version}
-    library = Library(text_groups, works, versions)
-    print("Library loaded")
-    return library
+    return Library(text_groups, works, versions)
 
 
 def get_first_value_for_language(values, lang):
@@ -175,10 +173,9 @@ def get_first_value_for_language(values, lang):
 def import_versions():
     Node.objects.filter(kind="nid").delete()
 
-    global library
     library = resolve_library()
 
     nodes = {}
     for _, version_data in library.versions.items():
-        CTSImporter(version_data, nodes).apply()
+        CTSImporter(library, version_data, nodes).apply()
     print(f"{Node.objects.count()} total nodes on the tree.", file=sys.stderr)
