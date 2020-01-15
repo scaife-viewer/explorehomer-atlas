@@ -1,6 +1,3 @@
-import os
-
-
 class URN:
     """
     Provides a subset of functionality from `MyCapytain.common.reference.URN`
@@ -58,39 +55,25 @@ class URN:
 
     @property
     def to_namespace(self):
-        return ":".join([
-            self.parsed["nid"],
-            self.parsed["protocol"],
-            self.parsed["namespace"],
-         ])
+        return ":".join(
+            [self.parsed["nid"], self.parsed["protocol"], self.parsed["namespace"]]
+        )
 
     @property
     def to_textgroup(self):
-        return ":".join([
-            self.to_namespace,
-            self.parsed["textgroup"]
-        ])
+        return ":".join([self.to_namespace, self.parsed["textgroup"]])
 
     @property
     def to_work(self):
-        return ".".join([
-            self.to_textgroup,
-            self.parsed["work"],
-        ])
+        return ".".join([self.to_textgroup, self.parsed["work"]])
 
     @property
     def to_version(self):
-        return ".".join([
-            self.to_work,
-            self.parsed["version"]
-        ])
+        return ".".join([self.to_work, self.parsed["version"]])
 
     @property
     def to_exemplar(self):
-        return ".".join([
-            self.to_version,
-            self.parsed["exemplar"]
-        ])
+        return ".".join([self.to_version, self.parsed["exemplar"]])
 
     @property
     def to_no_passage(self):
