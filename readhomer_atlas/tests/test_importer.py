@@ -280,7 +280,7 @@ def test_importer_exemplar(mock_node, mock_open):
         .add_child()
         .add_child(
             kind="exemplar",
-            urn="urn:cts:greekLit:tlg0013.tlg001.perseus-grc2.card",
+            urn="urn:cts:greekLit:tlg0013.tlg001.perseus-grc2.card:",
             idx=0,
         ),
         mock.call.add_root()

@@ -20,6 +20,7 @@ class CTSImporter:
     """
 
     CTS_URN_SCHEME = ["nid", "namespace", "textgroup", "work", "version"]
+    CTS_URN_SCHEME_EXEMPLAR = ["nid", "namespace", "textgroup", "work", "version", "exemplar"]
 
     def __init__(self, version_data, nodes=dict()):
         self.version_data = version_data
@@ -40,7 +41,7 @@ class CTSImporter:
 
     def get_urn_scheme(self, node_urn):
         if self.urn_has_exemplar(node_urn):
-            return [*self.CTS_URN_SCHEME, "exemplar", *self.citation_scheme]
+            return [*self.CTS_URN_SCHEME_EXEMPLAR, *self.citation_scheme]
         return [*self.CTS_URN_SCHEME, *self.citation_scheme]
 
     def destructure_node(self, node_urn, tokens):
@@ -54,7 +55,7 @@ class CTSImporter:
             parts = nodes[: idx + 1]
             joins = [*delimiters[:idx], ""]
             urn = "".join(item for pair in zip(parts, joins) for item in pair)
-            if kind in self.CTS_URN_SCHEME:
+            if kind in self.CTS_URN_SCHEME_EXEMPLAR:
                 urn = f"{urn}:"
             data = {"kind": kind, "urn": urn}
 
