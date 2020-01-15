@@ -10,7 +10,7 @@ from .models import Node
 from .urn import URN
 
 
-library = None
+LIBRARY_DATA_PATH = os.path.join(settings.PROJECT_ROOT, "data", "library")
 
 
 class Library:
@@ -18,9 +18,6 @@ class Library:
         self.text_groups = text_groups
         self.works = works
         self.versions = versions
-
-
-LIBRARY_DATA_PATH = os.path.join(settings.PROJECT_ROOT, "data", "library")
 
 
 class CTSImporter:
