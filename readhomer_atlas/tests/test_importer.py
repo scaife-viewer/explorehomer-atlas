@@ -1,80 +1,15 @@
 import copy
 from unittest import mock
 
-import hypothesis
-
 from readhomer_atlas.library.importers import CTSImporter
-from readhomer_atlas.tests.strategies import URNs
-
-
-# fmt: off
-PASSAGE = """
-    Il.1.1 μῆνιν ἄειδε θεὰ Πηληϊάδεω Ἀχιλῆος
-    Il.1.2 οὐλομένην, ἣ μυρίʼ Ἀχαιοῖς ἄλγεʼ ἔθηκε,
-    Il.1.3 πολλὰς δʼ ἰφθίμους ψυχὰς Ἄϊδι προΐαψεν
-    Il.1.4 ἡρώων, αὐτοὺς δὲ ἑλώρια τεῦχε κύνεσσιν
-    Il.1.5 οἰωνοῖσί τε πᾶσι, Διὸς δʼ ἐτελείετο βουλή,
-    Il.1.6 ἐξ οὗ δὴ τὰ πρῶτα διαστήτην ἐρίσαντε
-    Il.1.7 Ἀτρεΐδης τε ἄναξ ἀνδρῶν καὶ δῖος Ἀχιλλεύς.
-""".strip("\n")
-# fmt: on
-
-
-VERSION_DATA = {
-    "urn": "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:",
-    "content_path": "tlg0012.tlg001.perseus-grc2.txt",
-    "metadata": {
-        "work_title": "Iliad",
-        "work_urn": "urn:cts:greekLit:tlg0012.tlg001:",
-        "type": "edition",
-        "first_passage_urn": "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1.1-1.7",
-        "citation_scheme": ["rank_1", "rank_2"],
-    },
-}
-
-
-@hypothesis.given(URNs.cts_urns())
-def test_destructure__property(node_urn):
-    # TODO: I realise this code is on the uglier side of things but I
-    # anticipate that when we develop our base URN abstraction as discussed it
-    # should become easier and cleaner for us to make general statements and
-    # assertions about the characteristics any particular URN during
-    # property-based testing and then we can refactor the noisier parts below.
-    # I'm also looking for a naming convention for distinguishing
-    # property-based test cases but haven't come up with any good ones yet.
-    tokens = "Some tokens"
-    _, work, passage = node_urn.rsplit(":", maxsplit=2)
-    scheme = [f"rank_{idx + 1}" for idx, _ in enumerate(passage.split("."))]
-    version_data = copy.deepcopy(VERSION_DATA)
-    version_data["metadata"].update({"citation_scheme": scheme})
-
-    nodes = CTSImporter(version_data).destructure_node(node_urn, tokens)
-
-    has_exemplar = len(work.split(".")) == 4
-    if has_exemplar:
-        assert len(nodes) - len(scheme) == 6
-    else:
-        assert len(nodes) - len(scheme) == 5
-
-    urn_root, _ = node_urn.rsplit(":", maxsplit=1)
-    passage_nodes = nodes[-len(scheme) :]
-    for idx, node in enumerate(passage_nodes):
-        assert node["urn"] == f"{urn_root}:{node['ref']}"
-        assert node["rank"] == idx + 1
-        assert node["kind"] == scheme[idx]
-        if idx > 0:
-            assert node["ref"].startswith(f"{passage_nodes[idx - 1]['ref']}.")
-        if idx == passage_nodes.index(passage_nodes[-1]):
-            assert node["text_content"] == tokens
-        else:
-            assert "text_content" not in node
+from readhomer_atlas.tests import constants
 
 
 def test_destructure():
     node_urn = "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1.1"
     tokens = "Some tokens"
 
-    assert CTSImporter(VERSION_DATA).destructure_node(node_urn, tokens) == [
+    assert CTSImporter(constants.VERSION_DATA).destructure_node(node_urn, tokens) == [
         {"kind": "nid", "urn": "urn:cts:"},
         {"kind": "namespace", "urn": "urn:cts:greekLit:"},
         {"kind": "textgroup", "urn": "urn:cts:greekLit:tlg0012:"},
@@ -82,7 +17,7 @@ def test_destructure():
         {
             "kind": "version",
             "urn": "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:",
-            "metadata": VERSION_DATA["metadata"],
+            "metadata": constants.VERSION_DATA["metadata"],
         },
         {
             "kind": "rank_1",
@@ -104,7 +39,7 @@ def test_destructure_alphanumeric():
     node_urn = "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1.2.a.3"
     scheme = ["rank_1", "rank_2", "rank_3", "rank_4"]
     tokens = "Some tokens"
-    version_data = copy.deepcopy(VERSION_DATA)
+    version_data = copy.deepcopy(constants.VERSION_DATA)
     version_data["metadata"].update({"citation_scheme": scheme})
 
     assert CTSImporter(version_data).destructure_node(node_urn, tokens) == [
@@ -148,11 +83,11 @@ def test_destructure_alphanumeric():
 @mock.patch(
     "readhomer_atlas.library.importers.open",
     new_callable=mock.mock_open,
-    read_data=PASSAGE,
+    read_data=constants.PASSAGE,
 )
 @mock.patch("readhomer_atlas.library.importers.Node")
 def test_importer(mock_node, mock_open):
-    CTSImporter(VERSION_DATA, {}).apply()
+    CTSImporter(constants.VERSION_DATA, {}).apply()
 
     assert mock_node.mock_calls == [
         mock.call.add_root(kind="nid", urn="urn:cts:", idx=0),
@@ -302,11 +237,11 @@ def test_importer(mock_node, mock_open):
 @mock.patch(
     "readhomer_atlas.library.importers.open",
     new_callable=mock.mock_open,
-    read_data=PASSAGE,
+    read_data=constants.PASSAGE,
 )
 @mock.patch("readhomer_atlas.library.importers.Node")
 def test_importer_exemplar(mock_node, mock_open):
-    version_data = copy.deepcopy(VERSION_DATA)
+    version_data = copy.deepcopy(constants.VERSION_DATA)
     version_data.update({"urn": "urn:cts:greekLit:tlg0013.tlg001.perseus-grc2.card:"})
     CTSImporter(version_data, {}).apply()
 
