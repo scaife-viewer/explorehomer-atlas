@@ -2,10 +2,13 @@ import copy
 
 import hypothesis
 
-from readhomer_atlas.library.importers import CTSImporter
+from readhomer_atlas.library.importers import CTSImporter, Library
 from readhomer_atlas.library.urn import URN
 from readhomer_atlas.tests import constants
 from readhomer_atlas.tests.strategies import URNs
+
+
+library = Library(**constants.LIBRARY_DATA)
 
 
 @hypothesis.given(URNs.cts_urns())
@@ -19,10 +22,12 @@ def test_destructure(node_urn):
     parsed = URN(node_urn).parsed
     passage = parsed["ref"]
     scheme = [f"rank_{idx + 1}" for idx, _ in enumerate(passage.split("."))]
-    version_data = copy.deepcopy(constants.VERSION_DATA)
-    version_data["metadata"].update({"citation_scheme": scheme})
 
-    nodes = CTSImporter(version_data).destructure_node(node_urn, tokens)
+    library_ = copy.deepcopy(library)
+    version_data = library_.versions["urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:"]
+    version_data.update({"citationScheme": scheme})
+
+    nodes = CTSImporter(library_, version_data).destructure_node(node_urn, tokens)
 
     if parsed["exemplar"]:
         assert len(nodes) - len(scheme) == 6
