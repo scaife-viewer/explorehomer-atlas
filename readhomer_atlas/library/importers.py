@@ -36,7 +36,7 @@ class CTSImporter:
             # apply to particular node kinds in the heirarchy
             "citation_scheme": self.citation_scheme,
             "work_title": self.name,
-            "first_passage_urn": self.version_data["firstPassageUrn"],
+            "first_passage_urn": self.version_data["first_passage_urn"],
         }
 
     def __init__(self, library, version_data, nodes=dict()):
@@ -48,7 +48,7 @@ class CTSImporter:
         self.name = get_first_value_for_language(
             self.library.works[self.work_urn]["title"], "eng"
         )
-        self.citation_scheme = self.version_data["citationScheme"]
+        self.citation_scheme = self.version_data["citation_scheme"]
         self.metadata = self.get_version_metadata()
         self.idx_lookup = defaultdict(int)
 

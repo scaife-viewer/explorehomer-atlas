@@ -1,6 +1,6 @@
 {
   "urn": "urn:cts:greekLit:tlg0012:",
-  "nodeKind": "textgroup",
+  "node_kind": "textgroup",
   "name": [
     {
       "lang": "eng",

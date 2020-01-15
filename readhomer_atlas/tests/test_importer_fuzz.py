@@ -25,7 +25,7 @@ def test_destructure(node_urn):
 
     library_ = copy.deepcopy(library)
     version_data = library_.versions["urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:"]
-    version_data.update({"citationScheme": scheme})
+    version_data.update({"citation_scheme": scheme})
 
     nodes = CTSImporter(library_, version_data).destructure_node(node_urn, tokens)
 

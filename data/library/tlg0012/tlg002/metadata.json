@@ -1,7 +1,7 @@
 {
   "urn": "urn:cts:greekLit:tlg0012.tlg002:",
   "groupUrn": "urn:cts:greekLit:tlg0012:",
-  "nodeKind": "work",
+  "node_kind": "work",
   "lang": "grc",
   "title": [
     {
@@ -12,10 +12,10 @@
   "versions": [
     {
       "urn": "urn:cts:greekLit:tlg0012.tlg002.perseus-grc2:",
-      "nodeKind": "version",
-      "versionKind": "edition",
-      "firstPassageUrn": "urn:cts:greekLit:tlg0012.tlg002.perseus-grc2:1.1-1.10",
-      "citationScheme": ["book", "line"],
+      "node_kind": "version",
+      "version_kind": "edition",
+      "first_passage_urn": "urn:cts:greekLit:tlg0012.tlg002.perseus-grc2:1.1-1.10",
+      "citation_scheme": ["book", "line"],
       "label": [
         {
           "lang": "eng",

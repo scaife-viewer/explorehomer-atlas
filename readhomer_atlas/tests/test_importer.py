@@ -47,7 +47,7 @@ def test_destructure_alphanumeric():
     version_data = copy.deepcopy(
         library.versions["urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:"]
     )
-    version_data.update({"citationScheme": scheme})
+    version_data.update({"citation_scheme": scheme})
     metadata = copy.deepcopy(constants.VERSION_METADATA)
     metadata.update({"citation_scheme": scheme})
     print(metadata)

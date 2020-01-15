@@ -14,10 +14,10 @@ PASSAGE = """
 VERSION_DATA = {
     "path": "data/library/tlg0012/tlg001/tlg0012.tlg001.perseus-grc2.txt",
     "urn": "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:",
-    "nodeKind": "version",
-    "versionKind": "edition",
-    "firstPassageUrn": "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1.1-1.7",
-    "citationScheme": ["book", "line"],
+    "node_kind": "version",
+    "version_kind": "edition",
+    "first_passage_urn": "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1.1-1.7",
+    "citation_scheme": ["book", "line"],
     "title": [{"lang": "eng", "value": "Iliad, Homeri Opera"}],
     "description": [
         {
@@ -37,7 +37,7 @@ LIBRARY_DATA = {
     "text_groups": {
         "urn:cts:greekLit:tlg0012:": {
             "urn": "urn:cts:greekLit:tlg0012:",
-            "nodeKind": "textgroup",
+            "node_kind": "textgroup",
             "name": [{"lang": "eng", "value": "Homer"}],
         }
     },
@@ -45,16 +45,16 @@ LIBRARY_DATA = {
         "urn:cts:greekLit:tlg0012.tlg001:": {
             "urn": "urn:cts:greekLit:tlg0012.tlg001:",
             "groupUrn": "urn:cts:greekLit:tlg0012:",
-            "nodeKind": "work",
+            "node_kind": "work",
             "lang": "grc",
             "title": [{"lang": "eng", "value": "Iliad"}],
             "versions": [
                 {
                     "urn": "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:",
-                    "nodeKind": "version",
-                    "versionKind": "edition",
-                    "firstPassageUrn": "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1.1-1.7",
-                    "citationScheme": ["book", "line"],
+                    "node_kind": "version",
+                    "version_kind": "edition",
+                    "first_passage_urn": "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1.1-1.7",
+                    "citation_scheme": ["book", "line"],
                     "title": [{"lang": "eng", "value": "Iliad, Homeri Opera"}],
                     "description": [
                         {
@@ -68,16 +68,16 @@ LIBRARY_DATA = {
         "urn:cts:greekLit:tlg0012.tlg002:": {
             "urn": "urn:cts:greekLit:tlg0012.tlg002:",
             "groupUrn": "urn:cts:greekLit:tlg0012:",
-            "nodeKind": "work",
+            "node_kind": "work",
             "lang": "grc",
             "title": [{"lang": "eng", "value": "Odyssey"}],
             "versions": [
                 {
                     "urn": "urn:cts:greekLit:tlg0012.tlg002.perseus-grc2:",
-                    "nodeKind": "version",
-                    "versionKind": "edition",
-                    "firstPassageUrn": "urn:cts:greekLit:tlg0012.tlg002.perseus-grc2:1.1-1.10",
-                    "citationScheme": ["book", "line"],
+                    "node_kind": "version",
+                    "version_kind": "edition",
+                    "first_passage_urn": "urn:cts:greekLit:tlg0012.tlg002.perseus-grc2:1.1-1.10",
+                    "citation_scheme": ["book", "line"],
                     "title": [
                         {"lang": "eng", "value": "Odyssey, Loeb classical library"}
                     ],
@@ -95,10 +95,10 @@ LIBRARY_DATA = {
         "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:": {
             "path": "/Users/jwegner/Data/development/repos/scaife-viewer/explorehomer-atlas/data/library/tlg0012/tlg001/tlg0012.tlg001.perseus-grc2.txt",
             "urn": "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:",
-            "nodeKind": "version",
-            "versionKind": "edition",
-            "firstPassageUrn": "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1.1-1.7",
-            "citationScheme": ["book", "line"],
+            "node_kind": "version",
+            "version_kind": "edition",
+            "first_passage_urn": "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1.1-1.7",
+            "citation_scheme": ["book", "line"],
             "title": [{"lang": "eng", "value": "Iliad, Homeri Opera"}],
             "description": [
                 {
@@ -110,10 +110,10 @@ LIBRARY_DATA = {
         "urn:cts:greekLit:tlg0012.tlg002.perseus-grc2:": {
             "path": "/Users/jwegner/Data/development/repos/scaife-viewer/explorehomer-atlas/data/library/tlg0012/tlg002/tlg0012.tlg002.perseus-grc2.txt",
             "urn": "urn:cts:greekLit:tlg0012.tlg002.perseus-grc2:",
-            "nodeKind": "version",
-            "versionKind": "edition",
-            "firstPassageUrn": "urn:cts:greekLit:tlg0012.tlg002.perseus-grc2:1.1-1.10",
-            "citationScheme": ["book", "line"],
+            "node_kind": "version",
+            "version_kind": "edition",
+            "first_passage_urn": "urn:cts:greekLit:tlg0012.tlg002.perseus-grc2:1.1-1.10",
+            "citation_scheme": ["book", "line"],
             "title": [{"lang": "eng", "value": "Odyssey, Loeb classical library"}],
             "description": [
                 {
