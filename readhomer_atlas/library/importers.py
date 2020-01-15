@@ -34,6 +34,9 @@ class CTSImporter:
 
     def get_version_metadata(self):
         return {
+            # @@@ how much of the `metadata.json` do we
+            # "pass through" via GraphQL vs
+            # apply to particular node kinds in the heirarchy
             "citation_scheme": self.citation_scheme,
             "work_title": self.name,
             "first_passage_urn": self.version_data["firstPassageUrn"],
