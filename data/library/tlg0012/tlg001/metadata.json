@@ -1,6 +1,6 @@
 {
-  "urn": "urn:cts:greekLit:tlg0012.tlg001",
-  "groupUrn": "urn:cts:greekLit:tlg0012",
+  "urn": "urn:cts:greekLit:tlg0012.tlg001:",
+  "groupUrn": "urn:cts:greekLit:tlg0012:",
   "nodeKind": "work",
   "lang": "grc",
   "title": [
@@ -11,7 +11,7 @@
   ],
   "versions": [
     {
-      "urn": "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2",
+      "urn": "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:",
       "nodeKind": "version",
       "versionKind": "edition",
       "firstPassageUrn": "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1.1-1.7",

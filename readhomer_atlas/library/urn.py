@@ -33,49 +33,90 @@ class URN:
 
         components = urn.split(":")
         try:
-            _, _, namespace_component, work_component = components[:4]
+            (
+                nid,
+                protocol,
+                namespace_component,
+                work_component,
+                passage_component,
+            ) = components[:5]
         except ValueError:
             raise ValueError("Invalid URN")
-        passage_component = next(iter(components[4:]), None)
         work_components = work_component.split(".")
-        parsed.update({"namespace": namespace_component, "ref": passage_component})
+        parsed.update(
+            {
+                "nid": nid,
+                "protocol": protocol,
+                "namespace": namespace_component,
+                "ref": passage_component,
+            }
+        )
         for constant, value in enumerate(work_components, 1):
             key = self.WORK_COMPONENT_LABELS[constant]
             parsed[key] = value
         return parsed
 
+    @property
     def to_namespace(self):
-        return f'urn:cts:{self.parsed["namespace"]}'
+        return ":".join([
+            self.parsed["nid"],
+            self.parsed["protocol"],
+            self.parsed["namespace"],
+         ])
 
+    @property
     def to_textgroup(self):
-        return f'{self.to_namespace()}:{self.parsed["textgroup"]}'
+        return ":".join([
+            self.to_namespace,
+            self.parsed["textgroup"]
+        ])
 
+    @property
     def to_work(self):
-        return f'{self.to_textgroup()}.{self.parsed["work"]}'
+        return ".".join([
+            self.to_textgroup,
+            self.parsed["work"],
+        ])
 
+    @property
     def to_version(self):
-        return f'{self.to_textgroup()}.{self.parsed["version"]}'
+        return ".".join([
+            self.to_work,
+            self.parsed["version"]
+        ])
 
+    @property
     def to_exemplar(self):
-        return f'{self.to_textgroup()}.{self.parsed["exemplar"]}'
+        return ".".join([
+            self.to_version,
+            self.parsed["exemplar"]
+        ])
 
+    @property
     def to_no_passage(self):
         if self.parsed["ref"]:
             return self.urn.rsplit(":", maxsplit=1)[0]
         return self.urn
 
     def upTo(self, key):
-        if key == self.NAMESPACE:
-            return self.to_namespace()
-        elif key == self.TEXTGROUP and self.parsed["textgroup"]:
-            return self.to_textgroup()
-        elif key == self.WORK and self.parsed["work"]:
-            return self.to_work()
-        elif key == self.VERSION and self.parsed["version"]:
-            return self.to_version()
-        elif key == self.EXEMPLAR and self.parsed["exemplar"]:
-            return self.to_exemplar()
-        elif key == self.NO_PASSAGE and self.parsed["work"]:
-            return self.to_no_passage()
+        if key == self.NO_PASSAGE:
+            label = "no_passage"
         else:
+            label = self.WORK_COMPONENT_LABELS.get(key, None)
+        if label is None:
             raise KeyError("Provided key is not recognized.")
+
+        attr_name = f"to_{label}"
+        try:
+            value = getattr(self, attr_name)
+        except TypeError:
+            raise ValueError(f'URN has no "{label}" component')
+
+        if key == self.NO_PASSAGE and self.parsed["work"]:
+            return value
+
+        # from https://cite-architecture.github.io/ctsurn_spec/specification.html#overall-structure-of-a-cts-urn
+        # The value of the passage component may be a null string;
+        # in this case, the work component must still be separated
+        # from the null string by a colon.
+        return f"{value}:"

@@ -99,8 +99,7 @@ class CTSImporter:
     def generate_branch(self, line):
         ref, tokens = line.strip().split(maxsplit=1)
         _, passage = ref.split(".", maxsplit=1)
-        # @@@
-        node_data = self.destructure_node(f"{self.urn}:{passage}", tokens)
+        node_data = self.destructure_node(f"{self.urn}{passage}", tokens)
         for idx, data in enumerate(node_data):
             node = self.nodes.get(data["urn"])
             if node is None:
@@ -120,7 +119,6 @@ class CTSImporter:
         created_count = Node.objects.get(
             urn=self.version_data["urn"]
         ).get_descendant_count()
-        # @@@ fix descendants
         print(f"{self.name}: {created_count + 1} nodes.", file=sys.stderr)
 
 
@@ -156,7 +154,7 @@ def resolve_library():
                 metadata = json.load(open(metadata_file_path))
                 works[metadata["urn"]] = metadata
                 for version in metadata["versions"]:
-                    version_part = version["urn"].rsplit(":", maxsplit=1)[1]
+                    version_part = version["urn"].rsplit(":", maxsplit=2)[1]
                     version_path = os.path.join(directory_path, f"{version_part}.txt")
                     if not os.path.exists(version_path):
                         raise FileNotFoundError(version_path)
