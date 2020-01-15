@@ -81,7 +81,7 @@ class URN:
             return self.urn.rsplit(":", maxsplit=1)[0]
         return self.urn
 
-    def upTo(self, key):
+    def up_to(self, key):
         if key == self.NO_PASSAGE:
             label = "no_passage"
         else:

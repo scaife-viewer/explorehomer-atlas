@@ -44,7 +44,7 @@ class CTSImporter:
         self.version_data = version_data
         self.nodes = nodes
         self.urn = self.version_data["urn"].strip()
-        self.work_urn = URN(self.urn).upTo(URN.WORK)
+        self.work_urn = URN(self.urn).up_to(URN.WORK)
         self.name = get_first_value_for_language(
             self.library.works[self.work_urn]["title"], "eng"
         )
