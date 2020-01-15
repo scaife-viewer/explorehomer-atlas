@@ -1,0 +1,33 @@
+{
+  "urn": "urn:cts:greekLit:tlg0012.tlg001:",
+  "group_urn": "urn:cts:greekLit:tlg0012:",
+  "node_kind": "work",
+  "lang": "grc",
+  "title": [
+    {
+      "lang": "eng",
+      "value": "Iliad"
+    }
+  ],
+  "versions": [
+    {
+      "urn": "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:",
+      "node_kind": "version",
+      "version_kind": "edition",
+      "first_passage_urn": "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1.1-1.7",
+      "citation_scheme": ["book", "line"],
+      "label": [
+        {
+          "lang": "eng",
+          "value": "Iliad, Homeri Opera"
+        }
+      ],
+      "description": [
+        {
+          "lang": "eng",
+          "value": "Homer, creator; Monro, D. B. (David Binning), 1836-1905, creator; Monro, D. B. (David Binning), 1836-1905, editor; Allen, Thomas W. (Thomas William), b. 1862, editor"
+        }
+      ]
+    }
+  ]
+}

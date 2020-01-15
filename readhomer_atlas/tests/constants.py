@@ -12,13 +12,115 @@ PASSAGE = """
 
 
 VERSION_DATA = {
+    "path": "data/library/tlg0012/tlg001/tlg0012.tlg001.perseus-grc2.txt",
     "urn": "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:",
-    "content_path": "tlg0012.tlg001.perseus-grc2.txt",
-    "metadata": {
-        "work_title": "Iliad",
-        "work_urn": "urn:cts:greekLit:tlg0012.tlg001:",
-        "type": "edition",
-        "first_passage_urn": "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1.1-1.7",
-        "citation_scheme": ["rank_1", "rank_2"],
+    "node_kind": "version",
+    "version_kind": "edition",
+    "first_passage_urn": "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1.1-1.7",
+    "citation_scheme": ["book", "line"],
+    "title": [{"lang": "eng", "value": "Iliad, Homeri Opera"}],
+    "description": [
+        {
+            "lang": "eng",
+            "value": "Homer, creator; Monro, D. B. (David Binning), 1836-1905, creator; Monro, D. B. (David Binning), 1836-1905, editor; Allen, Thomas W. (Thomas William), b. 1862, editor",
+        }
+    ],
+}
+
+VERSION_METADATA = {
+    "citation_scheme": ["book", "line"],
+    "work_title": "Iliad",
+    "first_passage_urn": "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1.1-1.7",
+}
+
+LIBRARY_DATA = {
+    "text_groups": {
+        "urn:cts:greekLit:tlg0012:": {
+            "urn": "urn:cts:greekLit:tlg0012:",
+            "node_kind": "textgroup",
+            "name": [{"lang": "eng", "value": "Homer"}],
+        }
+    },
+    "works": {
+        "urn:cts:greekLit:tlg0012.tlg001:": {
+            "urn": "urn:cts:greekLit:tlg0012.tlg001:",
+            "groupUrn": "urn:cts:greekLit:tlg0012:",
+            "node_kind": "work",
+            "lang": "grc",
+            "title": [{"lang": "eng", "value": "Iliad"}],
+            "versions": [
+                {
+                    "urn": "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:",
+                    "node_kind": "version",
+                    "version_kind": "edition",
+                    "first_passage_urn": "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1.1-1.7",
+                    "citation_scheme": ["book", "line"],
+                    "title": [{"lang": "eng", "value": "Iliad, Homeri Opera"}],
+                    "description": [
+                        {
+                            "lang": "eng",
+                            "value": "Homer, creator; Monro, D. B. (David Binning), 1836-1905, creator; Monro, D. B. (David Binning), 1836-1905, editor; Allen, Thomas W. (Thomas William), b. 1862, editor",
+                        }
+                    ],
+                }
+            ],
+        },
+        "urn:cts:greekLit:tlg0012.tlg002:": {
+            "urn": "urn:cts:greekLit:tlg0012.tlg002:",
+            "groupUrn": "urn:cts:greekLit:tlg0012:",
+            "node_kind": "work",
+            "lang": "grc",
+            "title": [{"lang": "eng", "value": "Odyssey"}],
+            "versions": [
+                {
+                    "urn": "urn:cts:greekLit:tlg0012.tlg002.perseus-grc2:",
+                    "node_kind": "version",
+                    "version_kind": "edition",
+                    "first_passage_urn": "urn:cts:greekLit:tlg0012.tlg002.perseus-grc2:1.1-1.10",
+                    "citation_scheme": ["book", "line"],
+                    "title": [
+                        {"lang": "eng", "value": "Odyssey, Loeb classical library"}
+                    ],
+                    "description": [
+                        {
+                            "lang": "eng",
+                            "value": "Homer, creator; Murray, A. T. (Augustus Taber), 1866-1940, editor",
+                        }
+                    ],
+                }
+            ],
+        },
+    },
+    "versions": {
+        "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:": {
+            "path": "/Users/jwegner/Data/development/repos/scaife-viewer/explorehomer-atlas/data/library/tlg0012/tlg001/tlg0012.tlg001.perseus-grc2.txt",
+            "urn": "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:",
+            "node_kind": "version",
+            "version_kind": "edition",
+            "first_passage_urn": "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1.1-1.7",
+            "citation_scheme": ["book", "line"],
+            "title": [{"lang": "eng", "value": "Iliad, Homeri Opera"}],
+            "description": [
+                {
+                    "lang": "eng",
+                    "value": "Homer, creator; Monro, D. B. (David Binning), 1836-1905, creator; Monro, D. B. (David Binning), 1836-1905, editor; Allen, Thomas W. (Thomas William), b. 1862, editor",
+                }
+            ],
+        },
+        "urn:cts:greekLit:tlg0012.tlg002.perseus-grc2:": {
+            "path": "/Users/jwegner/Data/development/repos/scaife-viewer/explorehomer-atlas/data/library/tlg0012/tlg002/tlg0012.tlg002.perseus-grc2.txt",
+            "urn": "urn:cts:greekLit:tlg0012.tlg002.perseus-grc2:",
+            "node_kind": "version",
+            "version_kind": "edition",
+            "first_passage_urn": "urn:cts:greekLit:tlg0012.tlg002.perseus-grc2:1.1-1.10",
+            "citation_scheme": ["book", "line"],
+            "title": [{"lang": "eng", "value": "Odyssey, Loeb classical library"}],
+            "description": [
+                {
+                    "lang": "eng",
+                    "value": "Homer, creator; Murray, A. T. (Augustus Taber), 1866-1940, editor",
+                }
+            ],
+        },
     },
 }
