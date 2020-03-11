@@ -6,4 +6,5 @@ django-treebeard==4.3
 django==2.2.10
 graphene-django==2.6.0
 gunicorn==20.0.0
+regex==2019.12.9
 whitenoise==4.1.4
