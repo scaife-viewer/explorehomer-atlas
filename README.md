@@ -149,9 +149,8 @@ Page through text parts ten at a time.
 }
 ```
 
-```
-
 And then the next ten lines after that (use the `endCursor` value for `after`).
+
 ```
 {
   textParts(urn_Startswith: "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:", rank: 3, first: 10, after: "YXJyYXljb25uZWN0aW9uOjk=") {
