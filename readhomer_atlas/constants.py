@@ -69,5 +69,8 @@ INDEX = r"(\[\d+\])?"
 SUBREF = rf"(@{NODE}{INDEX})?"
 PASSAGE = rf"(((?:{NODE}\.)+)?{NODE}{SUBREF}|((?:{NODE}\.)+)?{RANGE}{SUBREF})"
 
-CTS_URN = re.compile(rf"^{NID}:{CTS_NSS}:{NS}:{WORK}:{PASSAGE}$")
+CTS_URN_NODES = ["nid", "namespace", "textgroup", "work", "version", "exemplar"]
+CTS_URN_DEPTHS = {key: idx for idx, key in enumerate(CTS_URN_NODES, 1)}
+CTS_URN_RE = re.compile(rf"^{NID}:{CTS_NSS}:{NS}:{WORK}:{PASSAGE}$")
+
 CITE_URN = None

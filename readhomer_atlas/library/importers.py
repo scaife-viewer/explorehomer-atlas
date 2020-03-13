@@ -1,10 +1,11 @@
 import json
 import os
-import re
 import sys
 from collections import defaultdict
 
 from django.conf import settings
+
+from readhomer_atlas import constants
 
 from .models import Node
 from .urn import URN
@@ -18,7 +19,6 @@ class LibraryDataResolver:
         self.text_groups = {}
         self.works = {}
         self.versions = {}
-
         self.resolved = self.resolve_data_dir_path(data_dir_path)
 
     def populate_versions(self, dirpath, data):
@@ -32,7 +32,7 @@ class LibraryDataResolver:
             self.versions[version["urn"]] = {"path": version_path, **version}
 
     def resolve_data_dir_path(self, data_dir_path):
-        for dirpath, dirnames, filenames in os.walk(data_dir_path):
+        for dirpath, dirnames, filenames in sorted(os.walk(data_dir_path)):
             if "metadata.json" not in filenames:
                 continue
 
@@ -61,8 +61,8 @@ class CTSImporter:
     https://cite-architecture.github.io/ctsurn_spec
     """
 
-    CTS_URN_SCHEME = ["nid", "namespace", "textgroup", "work", "version"]
-    CTS_URN_SCHEME_EXEMPLAR = CTS_URN_SCHEME + ["exemplar"]
+    CTS_URN_SCHEME = constants.CTS_URN_NODES[:-1]
+    CTS_URN_SCHEME_EXEMPLAR = constants.CTS_URN_NODES
 
     def get_version_metadata(self):
         return {
@@ -72,14 +72,15 @@ class CTSImporter:
             "citation_scheme": self.citation_scheme,
             "work_title": self.name,
             "first_passage_urn": self.version_data["first_passage_urn"],
+            "default_toc_urn": self.version_data.get("default_toc_urn"),
         }
 
     def __init__(self, library, version_data, nodes=dict()):
         self.library = library
         self.version_data = version_data
         self.nodes = nodes
-        self.urn = self.version_data["urn"].strip()
-        self.work_urn = URN(self.urn).up_to(URN.WORK)
+        self.urn = URN(self.version_data["urn"].strip())
+        self.work_urn = self.urn.up_to(self.urn.WORK)
         self.name = get_first_value_for_language(
             self.library.works[self.work_urn]["title"], "eng"
         )
@@ -92,39 +93,33 @@ class CTSImporter:
         self.idx_lookup[kind] += 1
         return idx
 
-    # @@@ refactor with URN class
-    def urn_has_exemplar(self, node_urn):
-        return len(node_urn.rsplit(":")[-2].split(".")) == 4
+    def get_root_urn_scheme(self, node_urn):
+        if node_urn.has_exemplar:
+            return self.CTS_URN_SCHEME_EXEMPLAR
+        return self.CTS_URN_SCHEME
 
-    # @@@ refactor with URN class
     def get_urn_scheme(self, node_urn):
-        if self.urn_has_exemplar(node_urn):
-            return [*self.CTS_URN_SCHEME_EXEMPLAR, *self.citation_scheme]
-        return [*self.CTS_URN_SCHEME, *self.citation_scheme]
+        return [*self.get_root_urn_scheme(node_urn), *self.citation_scheme]
+
+    def get_partial_urn(self, kind, node_urn):
+        scheme = self.get_root_urn_scheme(node_urn)
+        kind_map = {kind: getattr(URN, kind.upper()) for kind in scheme}
+        return node_urn.up_to(kind_map[kind])
 
     def destructure_node(self, node_urn, tokens):
-        # @@@ refactor with URN class
-        split = ["urn:cts", ":", *re.split(r"([:|.])", node_urn)[4:]]
-        nodes = [node for idx, node in enumerate(split) if idx % 2 == 0]
-        delimiters = [delimiter for idx, delimiter in enumerate(split) if idx % 2 == 1]
-        zipped = zip(self.get_urn_scheme(node_urn), nodes)
-
         node_data = []
-        for idx, (kind, node) in enumerate(zipped):
-            parts = nodes[: idx + 1]
-            joins = [*delimiters[:idx], ""]
-            urn = "".join(item for pair in zip(parts, joins) for item in pair)
-            if kind in self.CTS_URN_SCHEME_EXEMPLAR:
-                urn = f"{urn}:"
-            data = {"kind": kind, "urn": urn}
+        for kind in self.get_urn_scheme(node_urn):
+            data = {"kind": kind}
 
-            if kind == "version":
-                data.update({"metadata": self.metadata})
-
-            if kind in self.citation_scheme:
+            if kind not in self.citation_scheme:
+                data.update({"urn": self.get_partial_urn(kind, node_urn)})
+                if kind == "version":
+                    data.update({"metadata": self.metadata})
+            else:
                 ref_index = self.citation_scheme.index(kind)
-                ref = ".".join(nodes[-len(self.citation_scheme) :][: ref_index + 1])
-                data.update({"ref": ref, "rank": ref_index + 1})
+                ref = ".".join(node_urn.passage_nodes[: ref_index + 1])
+                urn = f"{node_urn.up_to(node_urn.NO_PASSAGE)}{ref}"
+                data.update({"urn": urn, "ref": ref, "rank": ref_index + 1})
                 if kind == self.citation_scheme[-1]:
                     data.update({"text_content": tokens})
 
@@ -134,8 +129,8 @@ class CTSImporter:
 
     def generate_branch(self, line):
         ref, tokens = line.strip().split(maxsplit=1)
-        _, passage = ref.split(".", maxsplit=1)
-        node_data = self.destructure_node(f"{self.urn}{passage}", tokens)
+        node_urn = URN(f"{self.urn}{ref}")
+        node_data = self.destructure_node(node_urn, tokens)
         for idx, data in enumerate(node_data):
             node = self.nodes.get(data["urn"])
             if node is None:
@@ -148,7 +143,7 @@ class CTSImporter:
                 self.nodes[data["urn"]] = node
 
     def apply(self):
-        full_content_path = self.library.versions[self.urn]["path"]
+        full_content_path = self.library.versions[self.urn.absolute]["path"]
         with open(full_content_path, "r") as f:
             for line in f:
                 self.generate_branch(line)
