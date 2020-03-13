@@ -2,6 +2,8 @@
 
 ATLAS implementation for the Scaife "Explore Homer" prototype
 
+This repository is part of the [Scaife Viewer](https://scaife-viewer.org) project, an open-source ecosystem for building rich online reading environments.
+
 ## Getting Started
 
 Make sure you are using a virtual environment of some sort (e.g. `virtualenv` or
