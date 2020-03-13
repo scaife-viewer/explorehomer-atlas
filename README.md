@@ -1,4 +1,6 @@
-# readhomer_atlas
+# explorehomer-atlas
+
+ATLAS implementation for the Scaife explorehomer prototype
 
 ## Getting Started
 
