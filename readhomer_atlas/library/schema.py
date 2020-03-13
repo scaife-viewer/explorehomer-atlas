@@ -1,13 +1,14 @@
 from django.db.models import Max, Min, Q
 
 import django_filters
-from graphene import Connection, ObjectType, String, relay
+from graphene import Connection, Field, ObjectType, String, relay
 from graphene.types import generic
 from graphene_django import DjangoObjectType
 from graphene_django.filter import DjangoFilterConnectionField
 from graphene_django.utils import camelize
 
 from .models import Node as TextPart
+from .urn import URN
 from .utils import get_chunker
 
 
@@ -284,7 +285,14 @@ class AbstractTextPartNode(DjangoObjectType):
 class VersionNode(AbstractTextPartNode):
     @classmethod
     def get_queryset(cls, queryset, info):
-        return queryset.filter(kind="version")
+        return queryset.filter(kind="version").order_by("urn")
+
+    def resolve_metadata(obj, *args, **kwargs):
+        metadata = obj.metadata
+        metadata.update(
+            {"work_urn": URN(metadata["first_passage_urn"]).up_to(URN.WORK)}
+        )
+        return camelize(metadata)
 
 
 class TextPartNode(AbstractTextPartNode):
@@ -301,6 +309,13 @@ class PassageTextPartNode(DjangoObjectType):
         filterset_class = PassageTextPartFilterSet
 
 
+class TreeNode(ObjectType):
+    tree = generic.GenericScalar()
+
+    def resolve_tree(obj, info, **kwargs):
+        return obj
+
+
 class Query(ObjectType):
     version = relay.Node.Field(VersionNode)
     versions = LimitedConnectionField(VersionNode)
@@ -311,3 +326,10 @@ class Query(ObjectType):
     # No passage_text_part endpoint available here like the others because we
     # will only support querying by reference.
     passage_text_parts = LimitedConnectionField(PassageTextPartNode)
+
+    tree = Field(TreeNode, urn=String(required=True), up_to=String(required=False))
+
+    def resolve_tree(obj, info, urn, **kwargs):
+        return TextPart.dump_tree(
+            root=TextPart.objects.get(urn=urn), up_to=kwargs.get("up_to")
+        )

@@ -1,14 +1,20 @@
+from django.utils.functional import cached_property
+
+from .models import Node
+
+
 class URN:
     """
-    Provides a subset of functionality from `MyCapytain.common.reference.URN`
+    Provides a subset of functionality from `MyCapytain.common.reference.URN`.
     """
 
-    NAMESPACE = 0
-    TEXTGROUP = 1
-    WORK = 2
-    VERSION = 3
-    EXEMPLAR = 4
-    NO_PASSAGE = 5
+    NID = 0
+    NAMESPACE = 1
+    TEXTGROUP = 2
+    WORK = 3
+    VERSION = 4
+    EXEMPLAR = 5
+    NO_PASSAGE = 6
     WORK_COMPONENT_LABELS = {
         TEXTGROUP: "textgroup",
         WORK: "work",
@@ -38,7 +44,7 @@ class URN:
                 passage_component,
             ) = components[:5]
         except ValueError:
-            raise ValueError("Invalid URN")
+            raise ValueError(f"Invalid URN: {urn}")
         work_components = work_component.split(".")
         parsed.update(
             {
@@ -48,16 +54,45 @@ class URN:
                 "ref": passage_component,
             }
         )
-        for constant, value in enumerate(work_components, 1):
+        for constant, value in enumerate(work_components, 2):
             key = self.WORK_COMPONENT_LABELS[constant]
             parsed[key] = value
         return parsed
 
+    @cached_property
+    def node(self):
+        if self.is_range:
+            # TODO: Return entire range of Nodes?
+            raise NotImplementedError("A range URN implies multiple nodes.")
+        return Node.objects.get(urn=self.absolute)
+
+    @property
+    def absolute(self):
+        return self.urn
+
+    @property
+    def is_range(self):
+        return self.passage is not None and "-" in self.passage
+
+    @property
+    def has_exemplar(self):
+        return self.parsed["exemplar"] is not None
+
+    @property
+    def passage(self):
+        return self.parsed["ref"]
+
+    @property
+    def passage_nodes(self):
+        return self.passage.split(".")
+
+    @property
+    def to_nid(self):
+        return ":".join([self.parsed["nid"], self.parsed["protocol"]])
+
     @property
     def to_namespace(self):
-        return ":".join(
-            [self.parsed["nid"], self.parsed["protocol"], self.parsed["namespace"]]
-        )
+        return ":".join([self.to_nid, self.parsed["namespace"]])
 
     @property
     def to_textgroup(self):
@@ -84,22 +119,19 @@ class URN:
     def up_to(self, key):
         if key == self.NO_PASSAGE:
             label = "no_passage"
+        elif key == self.NID:
+            label = "nid"
+        elif key == self.NAMESPACE:
+            label = "namespace"
         else:
             label = self.WORK_COMPONENT_LABELS.get(key, None)
         if label is None:
-            raise KeyError("Provided key is not recognized.")
+            raise KeyError(f"Provided key is not recognized: {key}")
 
         attr_name = f"to_{label}"
         try:
             value = getattr(self, attr_name)
         except TypeError:
-            raise ValueError(f'URN has no "{label}" component')
+            raise ValueError(f"URN has no component: {label}")
 
-        if key == self.NO_PASSAGE and self.parsed["work"]:
-            return value
-
-        # from https://cite-architecture.github.io/ctsurn_spec/specification.html#overall-structure-of-a-cts-urn
-        # The value of the passage component may be a null string;
-        # in this case, the work component must still be separated
-        # from the null string by a colon.
         return f"{value}:"

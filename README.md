@@ -67,7 +67,6 @@ Retrieve the first version.
     }
   }
 }
-
 ```
 
 Retrieve books within a particular version.
@@ -132,7 +131,6 @@ Retrieve lines within a book within a particular version.
 
 Page through text parts ten at a time.
 ```
-
 {
   textParts(urn_Startswith: "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:", rank: 2, first: 10) {
     edges {
@@ -172,6 +170,17 @@ And then the next ten lines after that (use the `endCursor` value for `after`).
 }
 ```
 
+Dump an entire `Node` tree rooted by URN and halting at `kind`. For example,
+here we serialize all CTS URNs from their `NID` root up to (and including) the
+level of `Version` nodes, maintaining the tree structure in the final payload.
+```
+{
+  tree(urn: "urn:cts:", upTo: "version") {
+    tree
+  }
+}
+```
+
 ## Tests
 
 Invoke tests via:
@@ -179,3 +188,9 @@ Invoke tests via:
 ```
 pytest
 ```
+
+## Deploying to QA instances
+
+PRs against `develop` will automatically be deployed to Heroku as a ["review app"](https://devcenter.heroku.com/articles/github-integration-review-apps) after tests pass on CircleCI.
+
+The review app for a PR will be deleted when the PR is closed / merged, or after 30 days after no new commits are added to an open PR.

@@ -132,6 +132,7 @@ INSTALLED_APPS = [
     # project
     "readhomer_atlas",
     "readhomer_atlas.library",
+    "readhomer_atlas.tocs",
 ]
 
 ADMIN_URL = "admin:index"

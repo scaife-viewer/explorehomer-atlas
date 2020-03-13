@@ -10,5 +10,5 @@ class URNs:
 
     @classmethod
     def cts_urns(cls, example=False):
-        strategy = strategies.from_regex(constants.CTS_URN)
+        strategy = strategies.from_regex(constants.CTS_URN_RE)
         return strategy.example() if example else strategy
