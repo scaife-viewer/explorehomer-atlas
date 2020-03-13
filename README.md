@@ -1,4 +1,4 @@
-# explorehomer-atlas
+# Explore Homer ATLAS
 
 ATLAS implementation for the Scaife explorehomer prototype
 
