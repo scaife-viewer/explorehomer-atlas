@@ -1,6 +1,6 @@
 # Explore Homer ATLAS
 
-ATLAS implementation for the Scaife explorehomer prototype
+ATLAS implementation for the Scaife "Explore Homer" prototype
 
 ## Getting Started
 
