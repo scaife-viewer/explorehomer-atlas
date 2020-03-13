@@ -2,6 +2,7 @@ import copy
 from unittest import mock
 
 from readhomer_atlas.library.importers import CTSImporter, Library
+from readhomer_atlas.library.urn import URN
 from readhomer_atlas.tests import constants
 
 
@@ -9,11 +10,11 @@ library = Library(**constants.LIBRARY_DATA)
 
 
 def test_destructure():
-    node_urn = "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1.1"
+    urn = URN("urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1.1")
     tokens = "Some tokens"
 
     assert CTSImporter(library, constants.VERSION_DATA).destructure_node(
-        node_urn, tokens
+        urn, tokens
     ) == [
         {"kind": "nid", "urn": "urn:cts:"},
         {"kind": "namespace", "urn": "urn:cts:greekLit:"},
@@ -41,7 +42,7 @@ def test_destructure():
 
 
 def test_destructure_alphanumeric():
-    node_urn = "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1.2.a.3"
+    urn = URN("urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1.2.a.3")
     scheme = ["rank_1", "rank_2", "rank_3", "rank_4"]
     tokens = "Some tokens"
     version_data = copy.deepcopy(
@@ -50,9 +51,8 @@ def test_destructure_alphanumeric():
     version_data.update({"citation_scheme": scheme})
     metadata = copy.deepcopy(constants.VERSION_METADATA)
     metadata.update({"citation_scheme": scheme})
-    print(metadata)
 
-    assert CTSImporter(library, version_data).destructure_node(node_urn, tokens) == [
+    assert CTSImporter(library, version_data).destructure_node(urn, tokens) == [
         {"kind": "nid", "urn": "urn:cts:"},
         {"kind": "namespace", "urn": "urn:cts:greekLit:"},
         {"kind": "textgroup", "urn": "urn:cts:greekLit:tlg0012:"},
@@ -252,7 +252,6 @@ def test_importer_exemplar(mock_node, mock_open):
     exemplar_data = library_.versions.pop(version_urn)
     exemplar_data.update({"urn": exemplar_urn})
     library_.versions[exemplar_urn] = exemplar_data
-    print(library_.versions.keys())
     CTSImporter(library_, exemplar_data, {}).apply()
 
     assert mock_node.mock_calls == [
