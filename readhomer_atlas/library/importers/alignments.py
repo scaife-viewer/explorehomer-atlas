@@ -5,7 +5,7 @@ import re
 
 from django.conf import settings
 
-from ..models import AlignmentChunk, Version, VersionAlignment
+from ..models import AlignmentChunk, Node, VersionAlignment
 
 
 ALIGNMENTS_DATA_PATH = os.path.join(settings.PROJECT_ROOT, "data", "alignments")
@@ -147,7 +147,8 @@ def _alignment_chunk_obj(version, line_lookup, alignment, milestone, milestone_i
 
 def _build_line_lookup(version):
     lookup = {}
-    for line in version.lines.all():
+    citation_scheme = version.metadata["citation_scheme"]
+    for line in version.get_descendants().filter(kind=citation_scheme[-1]):
         lookup[line.ref] = line
     return lookup
 
@@ -156,7 +157,9 @@ def _import_alignment(data):
     full_content_path = os.path.join(ALIGNMENTS_DATA_PATH, data["content_path"])
 
     milestones = get_alignment_milestones(full_content_path)
-    version = Version.objects.get(urn=data["version_urn"])
+    # the version urns in data need a trailing colon
+    version_urn = f'{data["version_urn"]}:'
+    version = Node.objects.get(urn=version_urn)
     alignment, _ = VersionAlignment.objects.update_or_create(
         version=version,
         name=data["metadata"]["name"],
