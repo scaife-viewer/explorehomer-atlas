@@ -7,8 +7,8 @@ from django.conf import settings
 
 from readhomer_atlas import constants
 
-from .models import Node
-from .urn import URN
+from ..models import Node
+from ..urn import URN
 
 
 LIBRARY_DATA_PATH = os.path.join(settings.PROJECT_ROOT, "data", "library")
@@ -162,8 +162,9 @@ def get_first_value_for_language(values, lang):
     return next(iter(filter(lambda x: x["lang"] == lang, values)), None).get("value")
 
 
-def import_versions():
-    Node.objects.filter(kind="nid").delete()
+def import_versions(reset=True):
+    if reset:
+        Node.objects.filter(kind="nid").delete()
 
     library = resolve_library()
 
