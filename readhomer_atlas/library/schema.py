@@ -163,6 +163,7 @@ class PassageTextPartConnection(Connection):
         return camelize(data)
 
 
+# @@@ consider refactoring with TextPartsReferenceFilterMixin
 class TextPartFilterSet(django_filters.FilterSet):
     reference = django_filters.CharFilter(method="reference_filter")
 
@@ -174,7 +175,10 @@ class TextPartFilterSet(django_filters.FilterSet):
             refs.append(end)
         predicate = Q(ref__in=refs)
         queryset = queryset.filter(
-            urn__startswith=version_urn, depth=len(start.split(".")) + 1
+            # @@@ this reference filter doesn't work because of
+            # depth assumptions
+            urn__startswith=version_urn,
+            depth=len(start.split(".")) + 1,
         )
         return filter_via_ref_predicate(self, queryset, predicate)
 
@@ -190,22 +194,7 @@ class TextPartFilterSet(django_filters.FilterSet):
         }
 
 
-class LineReferenceFilterMixin:
-    def _validate_reference_filter_version_urn(self):
-        version_urn = self.data.get("version__urn")
-        if not version_urn:
-            raise Exception("version_Urn is required to use the reference filter")
-        return version_urn
-
-
-# @@@ we might share parts of this reference filter to TextPartFilterSet
-class PassageTextPartFilterSet(django_filters.FilterSet):
-    reference = django_filters.CharFilter(method="reference_filter")
-
-    class Meta:
-        model = TextPart
-        fields = []
-
+class TextPartsReferenceFilterMixin:
     def _add_passage_to_context(self, reference):
         # @@@ instance.request is an alias for info.context and used to store
         # context data across filtersets
@@ -254,18 +243,28 @@ class PassageTextPartFilterSet(django_filters.FilterSet):
 
         return predicate
 
-    def reference_filter(self, queryset, name, value):
+    def get_lowest_textparts_queryset(self, value):
         self._add_passage_to_context(value)
-
         version = self.request.passage["version"]
         citation_scheme = version.metadata["citation_scheme"]
         max_depth = version.get_descendants().last().depth
-        max_rank = len(citation_scheme)
 
+        max_rank = len(citation_scheme)
         queryset = version.get_descendants().filter(depth=max_depth)
         _, ref = value.rsplit(":", maxsplit=1)
         predicate = self._build_predicate(queryset, ref, max_rank)
         return filter_via_ref_predicate(self, queryset, predicate)
+
+
+class PassageTextPartFilterSet(TextPartsReferenceFilterMixin, django_filters.FilterSet):
+    reference = django_filters.CharFilter(method="reference_filter")
+
+    class Meta:
+        model = TextPart
+        fields = []
+
+    def reference_filter(self, queryset, name, value):
+        return self.get_lowest_textparts_queryset(value)
 
 
 class AbstractTextPartNode(DjangoObjectType):
@@ -293,7 +292,6 @@ class AbstractTextPartNode(DjangoObjectType):
 
 class VersionNode(AbstractTextPartNode):
     alignment_chunks = LimitedConnectionField(lambda: AlignmentChunkNode)
-
 
     @classmethod
     def get_queryset(cls, queryset, info):
@@ -337,7 +335,7 @@ class VersionAlignmentNode(DjangoObjectType):
         filter_fields = ["name", "slug"]
 
 
-class AlignmentChunkFilterSet(LineReferenceFilterMixin, django_filters.FilterSet):
+class AlignmentChunkFilterSet(TextPartsReferenceFilterMixin, django_filters.FilterSet):
     reference = django_filters.CharFilter(method="reference_filter")
 
     class Meta:
@@ -345,47 +343,15 @@ class AlignmentChunkFilterSet(LineReferenceFilterMixin, django_filters.FilterSet
         fields = [
             "start",
             "end",
-            "start__book__position",
-            "start__position",
-            "end__book__position",
-            "end__position",
             "version__urn",
             "idx",
         ]
 
-    def _validate_reference_filter_version_urn(self):
-        version_urn = self.data.get("version__urn")
-        if not version_urn:
-            raise Exception("version__Urn is required to use the reference filter")
-        return version_urn
-
-
-    # @@@ new
     def reference_filter(self, queryset, name, value):
-        version_urn, ref = extract_version_urn_and_ref(value)
-        start, end = ref.split("-")
-        refs = [start]
-        if end:
-            refs.append(end)
-        predicate = Q(ref__in=refs)
-        queryset = queryset.filter(
-            urn__startswith=version_urn, depth=len(start.split(".")) + 1
+        textparts_queryset = self.get_lowest_textparts_queryset(value)
+        return queryset.filter(
+            Q(start__in=textparts_queryset) | Q(end__in=textparts_queryset)
         )
-        return filter_via_ref_predicate(self, queryset, predicate)
-
-    # @@@ old
-    # def reference_filter(self, queryset, name, value):
-    #     version_urn = self._validate_reference_filter_version_urn()
-
-    #     lines_queryset = Line.objects.filter(version__urn=version_urn)
-    #     subquery = self.lines_by_reference(value, lines_queryset)
-    #     ends_in_range = Q(
-    #         start__idx__gte=subquery["min"], end__idx__lte=subquery["max"]
-    #     )
-    #     starts_in_range = Q(
-    #         start__idx__gte=subquery["min"], start__idx__lte=subquery["max"]
-    #     )
-    #     return queryset.filter(ends_in_range | starts_in_range)
 
 
 class AlignmentChunkNode(DjangoObjectType):
