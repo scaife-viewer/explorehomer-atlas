@@ -1,12 +1,35 @@
 from django.db.models import Max, Min, Q
 
 import django_filters
-from graphene import ObjectType, String, relay
+from graphene import Connection, Field, ObjectType, String, relay
 from graphene.types import generic
 from graphene_django import DjangoObjectType
 from graphene_django.filter import DjangoFilterConnectionField
+from graphene_django.utils import camelize
 
-from .models import AlignmentChunk, Book, Line, Version, VersionAlignment
+from .models import AlignmentChunk
+from .models import Node as TextPart
+from .models import VersionAlignment
+from .urn import URN
+from .utils import get_chunker
+
+
+def extract_version_urn_and_ref(value):
+    dirty_version_urn, ref = value.rsplit(":", maxsplit=1)
+    # Restore the trailing ":".
+    version_urn = f"{dirty_version_urn}:"
+    return version_urn, ref
+
+
+def filter_via_ref_predicate(instance, queryset, predicate):
+    # We need a sequential identifier to do the range unless there is something
+    # else we can do with siblings / slicing within treebeard. Using `path`
+    # might work too, but having `idx` also allows us to do simple integer math
+    # as-needed.
+    if queryset.exists():
+        subquery = queryset.filter(predicate).aggregate(min=Min("idx"), max=Max("idx"))
+        queryset = queryset.filter(idx__gte=subquery["min"], idx__lte=subquery["max"])
+    return queryset
 
 
 class LimitedConnectionField(DjangoFilterConnectionField):
@@ -27,7 +50,7 @@ class LimitedConnectionField(DjangoFilterConnectionField):
         filtering_args,
         root,
         info,
-        **resolver_kwargs
+        **resolver_kwargs,
     ):
         first = resolver_kwargs.get("first")
         last = resolver_kwargs.get("last")
@@ -43,29 +66,128 @@ class LimitedConnectionField(DjangoFilterConnectionField):
             filtering_args,
             root,
             info,
-            **resolver_kwargs
+            **resolver_kwargs,
         )
 
 
-class VersionNode(DjangoObjectType):
+class PassageTextPartConnection(Connection):
     metadata = generic.GenericScalar()
-    books = LimitedConnectionField(lambda: BookNode)
-    lines = LimitedConnectionField(lambda: LineNode)
 
     class Meta:
-        model = Version
-        interfaces = (relay.Node,)
-        filter_fields = ["name", "urn"]
+        abstract = True
+
+    @staticmethod
+    def generate_passage_urn(version, object_list):
+        first = object_list[0]
+        last = object_list[-1]
+
+        if first == last:
+            return first.get("urn")
+        line_refs = [tp.get("ref") for tp in [first, last]]
+        passage_ref = "-".join(line_refs)
+        return f"{version.urn}{passage_ref}"
+
+    def get_ancestor_metadata(self, version, obj):
+        # @@@ this is currently the "first" ancestor
+        # and we need to stop it at the version boundary for backwards
+        # compatability with SV
+        data = []
+        if obj and obj.get_parent() != version:
+            ancestor_urn = obj.urn.rsplit(".", maxsplit=1)[0]
+            ancestor_ref = ancestor_urn.rsplit(":", maxsplit=1)[1]
+            data.append(
+                {
+                    # @@@ proper name for this is ref or position?
+                    "ref": ancestor_ref,
+                    "urn": ancestor_urn,
+                }
+            )
+        return data
+
+    def get_sibling_metadata(self, version, all_queryset, start_idx, count):
+        data = {}
+
+        chunker = get_chunker(
+            all_queryset, start_idx, count, queryset_values=["idx", "urn", "ref"]
+        )
+        previous_objects, next_objects = chunker.get_prev_next_boundaries()
+
+        if previous_objects:
+            data["previous"] = self.generate_passage_urn(version, previous_objects)
+
+        if next_objects:
+            data["next"] = self.generate_passage_urn(version, next_objects)
+        return data
+
+    def get_children_metadata(self, start_obj):
+        data = []
+        for tp in start_obj.get_children().values("ref", "urn"):
+            # @@@ denorm lsb
+            lsb = tp["ref"].rsplit(".", maxsplit=1)[-1]
+            data.append(
+                {
+                    # @@@ proper name is lsb or position
+                    "lsb": lsb,
+                    "urn": tp.get("urn"),
+                }
+            )
+        return data
+
+    def resolve_metadata(self, info, *args, **kwargs):
+        # @@@ resolve metadata.siblings|ancestors|children individually
+        passage_dict = info.context.passage
+        if not passage_dict:
+            return
+
+        urn = passage_dict["urn"]
+        version = passage_dict["version"]
+
+        refs = urn.rsplit(":", maxsplit=1)[1].split("-")
+        first_ref = refs[0]
+        last_ref = refs[-1]
+        if first_ref == last_ref:
+            start_obj = end_obj = version.get_descendants().get(ref=first_ref)
+        else:
+            start_obj = version.get_descendants().get(ref=first_ref)
+            end_obj = version.get_descendants().get(ref=last_ref)
+
+        data = {}
+        siblings_qs = start_obj.get_siblings()
+        start_idx = start_obj.idx
+        chunk_length = end_obj.idx - start_obj.idx + 1
+        data["ancestors"] = self.get_ancestor_metadata(version, start_obj)
+        data["siblings"] = self.get_sibling_metadata(
+            version, siblings_qs, start_idx, chunk_length
+        )
+        data["children"] = self.get_children_metadata(start_obj)
+        return camelize(data)
 
 
-class BookNode(DjangoObjectType):
-    label = String()
-    lines = LimitedConnectionField(lambda: LineNode)
+class TextPartFilterSet(django_filters.FilterSet):
+    reference = django_filters.CharFilter(method="reference_filter")
+
+    def reference_filter(self, queryset, name, value):
+        version_urn, ref = extract_version_urn_and_ref(value)
+        start, end = ref.split("-")
+        refs = [start]
+        if end:
+            refs.append(end)
+        predicate = Q(ref__in=refs)
+        queryset = queryset.filter(
+            urn__startswith=version_urn, depth=len(start.split(".")) + 1
+        )
+        return filter_via_ref_predicate(self, queryset, predicate)
 
     class Meta:
-        model = Book
-        interfaces = (relay.Node,)
-        filter_fields = ["position", "version__urn"]
+        model = TextPart
+        fields = {
+            "urn": ["exact", "startswith"],
+            "ref": ["exact", "startswith"],
+            "depth": ["exact", "lt", "gt"],
+            "rank": ["exact", "lt", "gt"],
+            "kind": ["exact"],
+            "idx": ["exact"],
+        }
 
 
 class LineReferenceFilterMixin:
@@ -75,75 +197,135 @@ class LineReferenceFilterMixin:
             raise Exception("version_Urn is required to use the reference filter")
         return version_urn
 
-    def _resolve_ref(self, value):
-        book_position = None
-        line_position = None
-        try:
-            book_position, line_position = value.split(".")
-        except ValueError:
-            book_position = value
-        return book_position, line_position
 
-    def lines_by_reference(self, value, line_queryset):
-        """
-        1
-        1-2
-        1.1-1.2
-        1.1-7
-        """
-        self._validate_reference_filter_version_urn()
-        predicate = Q()
-        try:
-            start, end = value.split("-")
-        except ValueError:
-            start = end = value
-
-        start_book, start_line = self._resolve_ref(start)
-        if start_book and start_line:
-            condition = Q(book__position=start_book, position=start_line)
-            predicate.add(condition, Q.OR)
-        elif start_book:
-            condition = Q(book__position=start_book, position=1)
-            predicate.add(condition, Q.OR)
-        else:
-            return line_queryset.none()
-
-        end_book, end_line = self._resolve_ref(end)
-        if end_book and end_line:
-            condition = Q(book__position=end_book, position=end_line)
-            predicate.add(condition, Q.OR)
-        elif end_book:
-            condition = Q(book__position=end_book)
-            predicate.add(condition, Q.OR)
-        else:
-            return line_queryset.none()
-        subquery = line_queryset.filter(predicate).aggregate(
-            min=Min("idx"), max=Max("idx")
-        )
-        return subquery
-
-
-class LineFilterSet(LineReferenceFilterMixin, django_filters.FilterSet):
+# @@@ we might share parts of this reference filter to TextPartFilterSet
+class PassageTextPartFilterSet(django_filters.FilterSet):
     reference = django_filters.CharFilter(method="reference_filter")
 
     class Meta:
-        model = Line
-        fields = ["position", "book__position", "version__urn"]
+        model = TextPart
+        fields = []
+
+    def _add_passage_to_context(self, reference):
+        # @@@ instance.request is an alias for info.context and used to store
+        # context data across filtersets
+        self.request.passage = dict(urn=reference)
+
+        version_urn, ref = extract_version_urn_and_ref(reference)
+        try:
+            version = TextPart.objects.get(urn=version_urn)
+        except TextPart.DoesNotExist:
+            raise Exception(f"{version_urn} was not found.")
+
+        self.request.passage["version"] = version
+
+    def _build_predicate(self, queryset, ref, max_rank):
+        predicate = Q()
+        if not ref:
+            # @@@ get all the text parts in the work; do we want to support this
+            # or should we just return the first text part?
+            start = queryset.first().ref
+            end = queryset.last().ref
+        else:
+            try:
+                start, end = ref.split("-")
+            except ValueError:
+                start = end = ref
+
+        # @@@ still need to validate reference based on the depth
+        # start_book, start_line = instance._resolve_ref(start)
+        # end_book, end_line = instance._resolve_ref(end)
+        # the validation might be done through treebeard; for now
+        # going to avoid the queries at this time
+        if start:
+            if len(start.split(".")) == max_rank:
+                condition = Q(ref=start)
+            else:
+                condition = Q(ref__istartswith=f"{start}.")
+            predicate.add(condition, Q.OR)
+        if end:
+            if len(end.split(".")) == max_rank:
+                condition = Q(ref=end)
+            else:
+                condition = Q(ref__istartswith=f"{end}.")
+            predicate.add(condition, Q.OR)
+        if not start or not end:
+            raise ValueError(f"Invalid reference: {ref}")
+
+        return predicate
 
     def reference_filter(self, queryset, name, value):
-        subquery = self.lines_by_reference(value, queryset)
-        queryset = queryset.filter(idx__gte=subquery["min"], idx__lte=subquery["max"])
-        return queryset
+        self._add_passage_to_context(value)
+
+        version = self.request.passage["version"]
+        citation_scheme = version.metadata["citation_scheme"]
+        max_depth = version.get_descendants().last().depth
+        max_rank = len(citation_scheme)
+
+        queryset = version.get_descendants().filter(depth=max_depth)
+        _, ref = value.rsplit(":", maxsplit=1)
+        predicate = self._build_predicate(queryset, ref, max_rank)
+        return filter_via_ref_predicate(self, queryset, predicate)
 
 
-class LineNode(DjangoObjectType):
+class AbstractTextPartNode(DjangoObjectType):
     label = String()
-    alignment_chunks = LimitedConnectionField(lambda: AlignmentChunkNode)
+    name = String()
+    metadata = generic.GenericScalar()
 
     class Meta:
-        model = Line
+        abstract = True
+
+    @classmethod
+    def __init_subclass_with_meta__(cls, **meta_options):
+        meta_options.update(
+            {
+                "model": TextPart,
+                "interfaces": (relay.Node,),
+                "filterset_class": TextPartFilterSet,
+            }
+        )
+        super().__init_subclass_with_meta__(**meta_options)
+
+    def resolve_metadata(obj, *args, **kwargs):
+        return camelize(obj.metadata)
+
+
+class VersionNode(AbstractTextPartNode):
+    alignment_chunks = LimitedConnectionField(lambda: AlignmentChunkNode)
+
+
+    @classmethod
+    def get_queryset(cls, queryset, info):
+        return queryset.filter(kind="version").order_by("urn")
+
+    def resolve_metadata(obj, *args, **kwargs):
+        metadata = obj.metadata
+        metadata.update(
+            {"work_urn": URN(metadata["first_passage_urn"]).up_to(URN.WORK)}
+        )
+        return camelize(metadata)
+
+
+class TextPartNode(AbstractTextPartNode):
+    pass
+
+
+class PassageTextPartNode(DjangoObjectType):
+    label = String()
+
+    class Meta:
+        model = TextPart
         interfaces = (relay.Node,)
-        filterset_class = LineFilterSet
+        connection_class = PassageTextPartConnection
+        filterset_class = PassageTextPartFilterSet
+
+
+class TreeNode(ObjectType):
+    tree = generic.GenericScalar()
+
+    def resolve_tree(obj, info, **kwargs):
+        return obj
 
 
 class VersionAlignmentNode(DjangoObjectType):
@@ -177,18 +359,33 @@ class AlignmentChunkFilterSet(LineReferenceFilterMixin, django_filters.FilterSet
             raise Exception("version__Urn is required to use the reference filter")
         return version_urn
 
-    def reference_filter(self, queryset, name, value):
-        version_urn = self._validate_reference_filter_version_urn()
 
-        lines_queryset = Line.objects.filter(version__urn=version_urn)
-        subquery = self.lines_by_reference(value, lines_queryset)
-        ends_in_range = Q(
-            start__idx__gte=subquery["min"], end__idx__lte=subquery["max"]
+    # @@@ new
+    def reference_filter(self, queryset, name, value):
+        version_urn, ref = extract_version_urn_and_ref(value)
+        start, end = ref.split("-")
+        refs = [start]
+        if end:
+            refs.append(end)
+        predicate = Q(ref__in=refs)
+        queryset = queryset.filter(
+            urn__startswith=version_urn, depth=len(start.split(".")) + 1
         )
-        starts_in_range = Q(
-            start__idx__gte=subquery["min"], start__idx__lte=subquery["max"]
-        )
-        return queryset.filter(ends_in_range | starts_in_range)
+        return filter_via_ref_predicate(self, queryset, predicate)
+
+    # @@@ old
+    # def reference_filter(self, queryset, name, value):
+    #     version_urn = self._validate_reference_filter_version_urn()
+
+    #     lines_queryset = Line.objects.filter(version__urn=version_urn)
+    #     subquery = self.lines_by_reference(value, lines_queryset)
+    #     ends_in_range = Q(
+    #         start__idx__gte=subquery["min"], end__idx__lte=subquery["max"]
+    #     )
+    #     starts_in_range = Q(
+    #         start__idx__gte=subquery["min"], start__idx__lte=subquery["max"]
+    #     )
+    #     return queryset.filter(ends_in_range | starts_in_range)
 
 
 class AlignmentChunkNode(DjangoObjectType):
@@ -204,11 +401,19 @@ class Query(ObjectType):
     version = relay.Node.Field(VersionNode)
     versions = LimitedConnectionField(VersionNode)
 
-    book = relay.Node.Field(BookNode)
-    books = LimitedConnectionField(BookNode)
+    text_part = relay.Node.Field(TextPartNode)
+    text_parts = LimitedConnectionField(TextPartNode)
 
-    line = relay.Node.Field(LineNode)
-    lines = LimitedConnectionField(LineNode)
+    # No passage_text_part endpoint available here like the others because we
+    # will only support querying by reference.
+    passage_text_parts = LimitedConnectionField(PassageTextPartNode)
 
     alignment_chunk = relay.Node.Field(AlignmentChunkNode)
     alignment_chunks = LimitedConnectionField(AlignmentChunkNode)
+
+    tree = Field(TreeNode, urn=String(required=True), up_to=String(required=False))
+
+    def resolve_tree(obj, info, urn, **kwargs):
+        return TextPart.dump_tree(
+            root=TextPart.objects.get(urn=urn), up_to=kwargs.get("up_to")
+        )

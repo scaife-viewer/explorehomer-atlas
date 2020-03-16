@@ -1,0 +1,18 @@
+{
+  "name": "explorehomer-atlas",
+  "env": {},
+  "formation": {
+    "web": {
+      "quantity": 1,
+      "size": "hobby"
+    }
+  },
+  "addons": [
+    "logdna:quaco"
+  ],
+  "buildpacks": [
+    {
+      "url": "heroku/python"
+    }
+  ]
+}

@@ -1,4 +1,8 @@
-# readhomer_atlas
+# Explore Homer ATLAS
+
+ATLAS implementation for the Scaife "Explore Homer" prototype
+
+This repository is part of the [Scaife Viewer](https://scaife-viewer.org) project, an open-source ecosystem for building rich online reading environments.
 
 ## Getting Started
 
@@ -9,10 +13,11 @@ Make sure you are using a virtual environment of some sort (e.g. `virtualenv` or
 pip install -r requirements-dev.txt
 ```
 
-Create and populate the database
+Populate the database:
 
 ```
 ./manage.py prepare_db
+./manage.py loaddata sites
 ```
 
 Run the Django dev server:
@@ -20,9 +25,7 @@ Run the Django dev server:
 ./manage.py runserver
 ```
 
-Browse to http://localhost:8000/
-
-## Loading data
+Browse to http://localhost:8000/.
 
 Create a superuser:
 
@@ -34,7 +37,7 @@ Browse to `/admin/library/`
 
 ## Sample Queries
 
-Retrieve a list of versions
+Retrieve a list of versions.
 ```
 {
   versions {
@@ -53,14 +56,26 @@ Retrieve a list of versions
 }
 ```
 
-Retrieve books within a particular version:
+Retrieve the first version.
 ```
 {
-  books(version_Urn: "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2") {
+  versions(first: 1) {
     edges {
       node {
-        id
-        label
+        metadata
+      }
+    }
+  }
+}
+```
+
+Retrieve books within a particular version.
+```
+{
+  textParts(urn_Startswith: "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:", rank: 1) {
+    edges {
+      node {
+        ref
       }
     }
     pageInfo {
@@ -71,14 +86,58 @@ Retrieve books within a particular version:
 }
 ```
 
-Retrieve lines within a book within a particular version:
+Retrieve text part by its URN.
 ```
 {
-  lines(version_Urn: "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2", book_Position: 1) {
+  textParts(urn: "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1.1") {
     edges {
       node {
+        ref
+        textContent
+      }
+    }
+  }
+}
+```
+
+Retrieve a passage by its URN along with relevant metadata.
+```
+{
+  passageTextParts(reference: "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1-2") {
+    metadata
+    edges {
+      node {
+        ref
+        textContent
+      }
+    }
+  }
+}
+```
+
+Retrieve lines within a book within a particular version.
+```
+{
+  textParts(urn_Startswith: "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:2.", first: 5) {
+    edges {
+      node {
+        ref
+        textContent
+      }
+    }
+  }
+}
+```
+
+Page through text parts ten at a time.
+```
+{
+  textParts(urn_Startswith: "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:", rank: 2, first: 10) {
+    edges {
+      cursor
+      node {
         id
-        label
+        ref
         textContent
       }
     }
@@ -90,29 +149,11 @@ Retrieve lines within a book within a particular version:
 }
 ```
 
-Retrieve lines from a particular passage:
-```
-{
-  lines(version_Urn: "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2", reference: "1.1-1.7") {
-    edges {
-      node {
-        id
-        label
-        textContent
-      }
-    }
-    pageInfo {
-      hasNextPage
-      endCursor
-    }
-  }
-}
-```
+And then the next ten lines after that (use the `endCursor` value for `after`).
 
-Page through a version ten lines at a time:
 ```
 {
-  lines(version_Urn: "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2", first:10) {
+  textParts(urn_Startswith: "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:", rank: 3, first: 10, after: "YXJyYXljb25uZWN0aW9uOjk=") {
     edges {
       cursor
       node {
@@ -129,22 +170,13 @@ Page through a version ten lines at a time:
 }
 ```
 
-and then the next ten lines after that (using the `endCursor` value for `after` )
+Dump an entire `Node` tree rooted by URN and halting at `kind`. For example,
+here we serialize all CTS URNs from their `NID` root up to (and including) the
+level of `Version` nodes, maintaining the tree structure in the final payload.
 ```
 {
-  lines(version_Urn: "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2", first:10, after: "YXJyYXljb25uZWN0aW9uOjk=") {
-    edges {
-      cursor
-      node {
-        id
-        label
-        textContent
-      }
-    }
-    pageInfo {
-      hasNextPage
-      endCursor
-    }
+  tree(urn: "urn:cts:", upTo: "version") {
+    tree
   }
 }
 ```
@@ -152,7 +184,7 @@ and then the next ten lines after that (using the `endCursor` value for `after` 
 ## Translation Alignments
 
 ### Sample Queries
-
+<!-- @@@ -->
 Get alignment chunks for a given line:
 ```
 {
@@ -180,10 +212,8 @@ Get alignment chunks for a given line:
       hasNextPage
       endCursor
     }
-  }
-}
-```
 
+<!-- @@@ -->
 Get alignment chunks for a given range:
 ```
 {
@@ -202,3 +232,17 @@ Get alignment chunks for a given range:
   }
 }
 ```
+
+## Tests
+
+Invoke tests via:
+
+```
+pytest
+```
+
+## Deploying to QA instances
+
+PRs against `develop` will automatically be deployed to Heroku as a ["review app"](https://devcenter.heroku.com/articles/github-integration-review-apps) after tests pass on CircleCI.
+
+The review app for a PR will be deleted when the PR is closed / merged, or after 30 days after no new commits are added to an open PR.

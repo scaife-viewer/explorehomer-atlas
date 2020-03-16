@@ -97,6 +97,7 @@ TEMPLATES = [
 ]
 
 MIDDLEWARE = [
+    "querycount.middleware.QueryCountMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "corsheaders.middleware.CorsMiddleware",
@@ -127,9 +128,11 @@ INSTALLED_APPS = [
     "corsheaders",
     "django_extensions",
     "graphene_django",
+    "treebeard",
     # project
     "readhomer_atlas",
     "readhomer_atlas.library",
+    "readhomer_atlas.tocs",
 ]
 
 ADMIN_URL = "admin:index"
@@ -172,3 +175,11 @@ GRAPHENE = {
     # @@@ restore the limit
     "RELAY_CONNECTION_MAX_LIMIT": None,
 }
+
+ATLAS_CONFIG = dict(
+    IN_MEMORY_PASSAGE_CHUNK_MAX=int(
+        os.environ.get("ATLAS_IN_MEMORY_PASSAGE_CHUNK_MAX", 2500)
+    )
+)
+
+NODE_ALPHABET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
