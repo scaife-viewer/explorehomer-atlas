@@ -55,10 +55,10 @@ class TextAlignmentChunk(models.Model):
 
     @property
     def contains(self):
-        last_text_part_kind = self.version.metadata["citation_scheme"][-1]
+        text_part_kind = self.start.kind
         return (
             self.version.get_descendants()
-            .filter(kind=last_text_part_kind)
+            .filter(kind=text_part_kind)
             .filter(idx__gte=self.start.idx)
             .filter(idx__lte=self.end.idx)
         )
