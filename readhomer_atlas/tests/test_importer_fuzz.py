@@ -62,7 +62,7 @@ def test_destructure(urn):
     version_data = library.versions[urn.up_to(urn.VERSION)]
     version_data.update({"citation_scheme": scheme})
 
-    nodes = CTSImporter(library, version_data).destructure_node(urn, tokens)
+    nodes = CTSImporter(library, version_data).destructure_urn(urn, tokens)
 
     if urn.has_exemplar:
         assert len(nodes) - len(urn.passage_nodes) == 6
