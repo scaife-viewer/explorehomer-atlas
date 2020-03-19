@@ -4,7 +4,7 @@ from unittest import mock
 import pytest
 from treebeard.exceptions import PathOverflow
 
-from readhomer_atlas.library.importers import CTSImporter, Library
+from readhomer_atlas.library.importers.versions import CTSImporter, Library
 from readhomer_atlas.library.models import Node
 from readhomer_atlas.tests import constants
 
@@ -13,9 +13,9 @@ library = Library(**constants.LIBRARY_DATA)
 
 
 @pytest.mark.django_db
-@mock.patch("readhomer_atlas.library.importers.CTSImporter.check_depth")
+@mock.patch("readhomer_atlas.library.importers.versions.CTSImporter.check_depth")
 @mock.patch(
-    "readhomer_atlas.library.importers.open",
+    "readhomer_atlas.library.importers.versions.open",
     new_callable=mock.mock_open,
     read_data=constants.PASSAGE,
 )
@@ -28,7 +28,7 @@ def test_importer_depth_exception(mock_open, mock_depth):
 
 @pytest.mark.django_db
 @mock.patch(
-    "readhomer_atlas.library.importers.open",
+    "readhomer_atlas.library.importers.versions.open",
     new_callable=mock.mock_open,
     read_data=constants.PASSAGE,
 )
@@ -64,7 +64,7 @@ def test_importer(mock_open):
 
 @pytest.mark.django_db
 @mock.patch(
-    "readhomer_atlas.library.importers.open",
+    "readhomer_atlas.library.importers.versions.open",
     new_callable=mock.mock_open,
     read_data=constants.PASSAGE,
 )

@@ -1,7 +1,7 @@
 import copy
 from unittest import mock
 
-from readhomer_atlas.library.importers import CTSImporter, Library
+from readhomer_atlas.library.importers.versions import CTSImporter, Library
 from readhomer_atlas.library.urn import URN
 from readhomer_atlas.tests import constants
 
@@ -91,12 +91,12 @@ def test_destructure_alphanumeric():
 
 
 @mock.patch(
-    "readhomer_atlas.library.importers.open",
+    "readhomer_atlas.library.importers.versions.open",
     new_callable=mock.mock_open,
     read_data=constants.PASSAGE,
 )
-@mock.patch("readhomer_atlas.library.importers.CTSImporter.generate_node")
-@mock.patch("readhomer_atlas.library.importers.Node")
+@mock.patch("readhomer_atlas.library.importers.versions.CTSImporter.generate_node")
+@mock.patch("readhomer_atlas.library.importers.versions.Node")
 def test_importer(mock_node, mock_generate, mock_open):
     CTSImporter(library, constants.VERSION_DATA, {}).apply()
 
@@ -229,12 +229,12 @@ def test_importer(mock_node, mock_generate, mock_open):
 
 
 @mock.patch(
-    "readhomer_atlas.library.importers.open",
+    "readhomer_atlas.library.importers.versions.open",
     new_callable=mock.mock_open,
     read_data=constants.PASSAGE,
 )
-@mock.patch("readhomer_atlas.library.importers.CTSImporter.generate_node")
-@mock.patch("readhomer_atlas.library.importers.Node")
+@mock.patch("readhomer_atlas.library.importers.versions.CTSImporter.generate_node")
+@mock.patch("readhomer_atlas.library.importers.versions.Node")
 def test_importer_with_exemplar(mock_node, mock_generate, mock_open):
     version_urn = "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:"
     exemplar_urn = "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2.card:"
