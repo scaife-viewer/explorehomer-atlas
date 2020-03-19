@@ -55,11 +55,10 @@ class AlignmentChunk(models.Model):
 
     @property
     def contains(self):
-        # @@@
-        return Node.objects.none()
-        # return self.version.lines.filter(idx__gte=self.start.idx).filter(
-        #     idx__lte=self.end.idx
-        # )
+        last_text_part_kind = self.version.metadata["citation_scheme"][-1]
+        return self.version.get_descendants().filter(kind=last_text_part_kind).filter(idx__gte=self.start.idx).filter(
+            idx__lte=self.end.idx
+        )
 
 
 class Node(MP_Node):
