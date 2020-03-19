@@ -4,6 +4,10 @@ import sys
 from collections import defaultdict
 
 from django.conf import settings
+from django.db.models import Max
+from django.utils.translation import ugettext_noop
+
+from treebeard.exceptions import PathOverflow
 
 from readhomer_atlas import constants
 
@@ -64,17 +68,6 @@ class CTSImporter:
     CTS_URN_SCHEME = constants.CTS_URN_NODES[:-1]
     CTS_URN_SCHEME_EXEMPLAR = constants.CTS_URN_NODES
 
-    def get_version_metadata(self):
-        return {
-            # @@@ how much of the `metadata.json` do we
-            # "pass through" via GraphQL vs
-            # apply to particular node kinds in the heirarchy
-            "citation_scheme": self.citation_scheme,
-            "work_title": self.name,
-            "first_passage_urn": self.version_data["first_passage_urn"],
-            "default_toc_urn": self.version_data.get("default_toc_urn"),
-        }
-
     def __init__(self, library, version_data, nodes=dict()):
         self.library = library
         self.version_data = version_data
@@ -88,10 +81,42 @@ class CTSImporter:
         self.metadata = self.get_version_metadata()
         self.idx_lookup = defaultdict(int)
 
+        self.nodes_to_create = []
+        self.node_last_child_lookup = defaultdict()
+
+    @staticmethod
+    def add_root(data):
+        return Node.add_root(**data)
+
+    @staticmethod
+    def add_child(parent, data):
+        return parent.add_child(**data)
+
+    @staticmethod
+    def check_depth(path):
+        return len(path) > Node._meta.get_field("path").max_length
+
+    @staticmethod
+    def set_numchild(node):
+        # @@@ experiment with F expressions
+        # @@@ experiment with path__range queries
+        node.numchild = Node.objects.filter(
+            path__startswith=node.path, depth=node.depth + 1
+        ).count()
+
+    @staticmethod
+    def get_parent_urn(idx, branch_data):
+        return branch_data[idx - 1]["urn"] if idx else None
+
     def get_node_idx(self, kind):
         idx = self.idx_lookup[kind]
         self.idx_lookup[kind] += 1
         return idx
+
+    def get_partial_urn(self, kind, node_urn):
+        scheme = self.get_root_urn_scheme(node_urn)
+        kind_map = {kind: getattr(URN, kind.upper()) for kind in scheme}
+        return node_urn.up_to(kind_map[kind])
 
     def get_root_urn_scheme(self, node_urn):
         if node_urn.has_exemplar:
@@ -101,12 +126,62 @@ class CTSImporter:
     def get_urn_scheme(self, node_urn):
         return [*self.get_root_urn_scheme(node_urn), *self.citation_scheme]
 
-    def get_partial_urn(self, kind, node_urn):
-        scheme = self.get_root_urn_scheme(node_urn)
-        kind_map = {kind: getattr(URN, kind.upper()) for kind in scheme}
-        return node_urn.up_to(kind_map[kind])
+    def get_version_metadata(self):
+        return {
+            # @@@ how much of the `metadata.json` do we
+            # "pass through" via GraphQL vs
+            # apply to particular node kinds in the heirarchy
+            "citation_scheme": self.citation_scheme,
+            "work_title": self.name,
+            "first_passage_urn": self.version_data["first_passage_urn"],
+            "default_toc_urn": self.version_data.get("default_toc_urn"),
+        }
 
-    def destructure_node(self, node_urn, tokens):
+    def add_child_bulk(self, parent, node_data):
+        # @@@ forked version of `Node._inc_path`
+        # https://github.com/django-treebeard/django-treebeard/blob/master/treebeard/mp_tree.py#L1121
+        child_node = Node(**node_data)
+        child_node.depth = parent.depth + 1
+
+        last_child = self.node_last_child_lookup.get(parent.urn)
+        if not last_child:
+            # The node had no children, adding the first child.
+            child_node.path = Node._get_path(parent.path, child_node.depth, 1)
+            if self.check_depth(child_node.path):
+                raise PathOverflow(
+                    ugettext_noop(
+                        "The new node is too deep in the tree, try"
+                        " increasing the path.max_length property"
+                        " and UPDATE your database"
+                    )
+                )
+        else:
+            # Adding the new child as the last one.
+            child_node.path = last_child._inc_path()
+        self.node_last_child_lookup[parent.urn] = child_node
+        self.nodes_to_create.append(child_node)
+        return child_node
+
+    def use_bulk(self, node_data):
+        """
+        `Node.save` performs multiple INSERT and UPDATE queries.
+
+        For text-part level nodes, we see a massive performance
+        benefit by batching and bulk inserting the nodes, and then
+        bulk updating any parent nodes to keep the `numchild`
+        value of nodes in sync.
+        """
+        return bool(node_data.get("rank"))
+
+    def generate_node(self, idx, node_data, parent_urn):
+        if idx == 0:
+            return self.add_root(node_data)
+        parent = self.nodes.get(parent_urn)
+        if self.use_bulk(node_data):
+            return self.add_child_bulk(parent, node_data)
+        return self.add_child(parent, node_data)
+
+    def destructure_urn(self, node_urn, tokens):
         node_data = []
         for kind in self.get_urn_scheme(node_urn):
             data = {"kind": kind}
@@ -130,27 +205,41 @@ class CTSImporter:
     def generate_branch(self, line):
         ref, tokens = line.strip().split(maxsplit=1)
         node_urn = URN(f"{self.urn}{ref}")
-        node_data = self.destructure_node(node_urn, tokens)
-        for idx, data in enumerate(node_data):
-            node = self.nodes.get(data["urn"])
+        branch_data = self.destructure_urn(node_urn, tokens)
+        for idx, node_data in enumerate(branch_data):
+            node = self.nodes.get(node_data["urn"])
             if node is None:
-                data.update({"idx": self.get_node_idx(data["kind"])})
-                if idx == 0:
-                    node = Node.add_root(**data)
-                else:
-                    parent = self.nodes.get(node_data[idx - 1]["urn"])
-                    node = parent.add_child(**data)
-                self.nodes[data["urn"]] = node
+                node_data.update({"idx": self.get_node_idx(node_data["kind"])})
+                parent_urn = self.get_parent_urn(idx, branch_data)
+                node = self.generate_node(idx, node_data, parent_urn)
+                self.nodes[node_data["urn"]] = node
+
+    def update_numchild_values(self):
+        self.set_numchild(self.version_node)
+        to_update = [self.version_node]
+
+        # once `numchild` is set on version, we can get descendants
+        descendants = self.version_node.get_descendants()
+        max_depth = descendants.all().aggregate(max_depth=Max("depth"))["max_depth"]
+        for node in descendants.exclude(depth=max_depth):
+            self.set_numchild(node)
+            to_update.append(node)
+        Node.objects.bulk_update(to_update, ["numchild"], batch_size=500)
+
+    def finalize(self):
+        self.version_node = Node.objects.get(urn=self.urn.absolute)
+        Node.objects.bulk_create(self.nodes_to_create, batch_size=500)
+        self.update_numchild_values()
+        return self.version_node.get_descendant_count() + 1
 
     def apply(self):
         full_content_path = self.library.versions[self.urn.absolute]["path"]
         with open(full_content_path, "r") as f:
             for line in f:
                 self.generate_branch(line)
-        created_count = Node.objects.get(
-            urn=self.version_data["urn"]
-        ).get_descendant_count()
-        print(f"{self.name}: {created_count + 1} nodes.", file=sys.stderr)
+
+        count = self.finalize()
+        print(f"{self.name}: {count} nodes.", file=sys.stderr)
 
 
 def resolve_library():
