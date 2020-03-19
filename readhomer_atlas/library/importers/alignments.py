@@ -5,7 +5,7 @@ import re
 
 from django.conf import settings
 
-from ..models import AlignmentChunk, Node, VersionAlignment
+from ..models import Node, TextAlignment, TextAlignmentChunk
 
 
 ALIGNMENTS_DATA_PATH = os.path.join(settings.PROJECT_ROOT, "data", "alignments")
@@ -119,7 +119,7 @@ def get_alignment_milestones(path):
 
 
 def _alignment_chunk_obj(version, line_lookup, alignment, milestone, milestone_idx):
-    chunk_obj = AlignmentChunk(
+    chunk_obj = TextAlignmentChunk(
         citation=milestone["citation"],
         idx=milestone_idx,
         version=version,
@@ -160,7 +160,7 @@ def _import_alignment(data):
     # the version urns in data need a trailing colon
     version_urn = f'{data["version_urn"]}:'
     version = Node.objects.get(urn=version_urn)
-    alignment, _ = VersionAlignment.objects.update_or_create(
+    alignment, _ = TextAlignment.objects.update_or_create(
         version=version,
         name=data["metadata"]["name"],
         defaults=dict(metadata=data["metadata"]),
@@ -176,13 +176,13 @@ def _import_alignment(data):
         if chunk:
             to_create.append(chunk)
             chunks_created += 1
-    created = len(AlignmentChunk.objects.bulk_create(to_create, batch_size=500))
+    created = len(TextAlignmentChunk.objects.bulk_create(to_create, batch_size=500))
     assert created == chunks_created
 
 
 def import_alignments(reset=False):
     if reset:
-        VersionAlignment.objects.all().delete()
+        TextAlignment.objects.all().delete()
 
     alignments_metadata = json.load(open(ALIGNMENTS_METADATA_PATH))
     for alignment_data in alignments_metadata["alignments"]:

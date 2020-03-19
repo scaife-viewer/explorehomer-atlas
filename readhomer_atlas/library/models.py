@@ -12,21 +12,21 @@ from treebeard.mp_tree import MP_Node
 from readhomer_atlas import constants
 
 
-class VersionAlignment(models.Model):
+class TextAlignment(models.Model):
     name = models.CharField(blank=True, null=True, max_length=255)
     slug = models.SlugField()
     metadata = JSONField(default=dict, blank=True)
 
     # @@@
     version = models.ForeignKey(
-        "library.Node", related_name="alignments", on_delete=models.CASCADE
+        "library.Node", related_name="text_alignments", on_delete=models.CASCADE
     )
 
     def __str__(self):
         return self.name
 
 
-class AlignmentChunk(models.Model):
+class TextAlignmentChunk(models.Model):
     # denormed from start / end
     citation = models.CharField(max_length=13)
     items = JSONField(default=list, blank=True)
@@ -35,11 +35,11 @@ class AlignmentChunk(models.Model):
 
     # @@@
     version = models.ForeignKey(
-        "library.Node", related_name="alignment_chunks", on_delete=models.CASCADE
+        "library.Node", related_name="text_alignment_chunks", on_delete=models.CASCADE
     )
     alignment = models.ForeignKey(
-        "library.VersionAlignment",
-        related_name="alignment_chunks",
+        "library.TextAlignment",
+        related_name="text_alignment_chunks",
         on_delete=models.CASCADE,
     )
     start = models.ForeignKey(
@@ -56,8 +56,11 @@ class AlignmentChunk(models.Model):
     @property
     def contains(self):
         last_text_part_kind = self.version.metadata["citation_scheme"][-1]
-        return self.version.get_descendants().filter(kind=last_text_part_kind).filter(idx__gte=self.start.idx).filter(
-            idx__lte=self.end.idx
+        return (
+            self.version.get_descendants()
+            .filter(kind=last_text_part_kind)
+            .filter(idx__gte=self.start.idx)
+            .filter(idx__lte=self.end.idx)
         )
 
 

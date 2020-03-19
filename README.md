@@ -181,14 +181,14 @@ level of `Version` nodes, maintaining the tree structure in the final payload.
 }
 ```
 
-## Translation Alignments
+## Text Alignments
 
 ### Sample Queries
 
-Get alignment chunks for a given reference:
+Get text alignment chunks for a given reference:
 ```
 {
-  alignmentChunks(reference: "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1.8") {
+  textAlignmentChunks(reference: "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1.8") {
     edges {
       cursor
       node {
@@ -204,14 +204,14 @@ Get alignment chunks for a given reference:
 }
 ```
 
-Get a version annotated with alignment chunks:
+Get a version annotated with text alignment chunks:
 ```
 {
   versions (urn:"urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:") {
     edges {
       node {
         metadata,
-        alignmentChunks (first:2){
+        textAlignmentChunks (first:2){
           edges {
             node {
               citation

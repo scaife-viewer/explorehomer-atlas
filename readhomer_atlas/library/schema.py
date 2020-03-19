@@ -7,9 +7,8 @@ from graphene_django import DjangoObjectType
 from graphene_django.filter import DjangoFilterConnectionField
 from graphene_django.utils import camelize
 
-from .models import AlignmentChunk
 from .models import Node as TextPart
-from .models import VersionAlignment
+from .models import TextAlignment, TextAlignmentChunk
 from .urn import URN
 from .utils import get_chunker
 
@@ -291,7 +290,7 @@ class AbstractTextPartNode(DjangoObjectType):
 
 
 class VersionNode(AbstractTextPartNode):
-    alignment_chunks = LimitedConnectionField(lambda: AlignmentChunkNode)
+    text_alignment_chunks = LimitedConnectionField(lambda: TextAlignmentChunkNode)
 
     @classmethod
     def get_queryset(cls, queryset, info):
@@ -326,20 +325,22 @@ class TreeNode(ObjectType):
         return obj
 
 
-class VersionAlignmentNode(DjangoObjectType):
+class TextAlignmentNode(DjangoObjectType):
     metadata = generic.GenericScalar()
 
     class Meta:
-        model = VersionAlignment
+        model = TextAlignment
         interfaces = (relay.Node,)
         filter_fields = ["name", "slug"]
 
 
-class AlignmentChunkFilterSet(TextPartsReferenceFilterMixin, django_filters.FilterSet):
+class TextAlignmentChunkFilterSet(
+    TextPartsReferenceFilterMixin, django_filters.FilterSet
+):
     reference = django_filters.CharFilter(method="reference_filter")
 
     class Meta:
-        model = AlignmentChunk
+        model = TextAlignmentChunk
         fields = [
             "start",
             "end",
@@ -354,13 +355,13 @@ class AlignmentChunkFilterSet(TextPartsReferenceFilterMixin, django_filters.Filt
         )
 
 
-class AlignmentChunkNode(DjangoObjectType):
+class TextAlignmentChunkNode(DjangoObjectType):
     items = generic.GenericScalar()
 
     class Meta:
-        model = AlignmentChunk
+        model = TextAlignmentChunk
         interfaces = (relay.Node,)
-        filterset_class = AlignmentChunkFilterSet
+        filterset_class = TextAlignmentChunkFilterSet
 
 
 class Query(ObjectType):
@@ -374,8 +375,8 @@ class Query(ObjectType):
     # will only support querying by reference.
     passage_text_parts = LimitedConnectionField(PassageTextPartNode)
 
-    alignment_chunk = relay.Node.Field(AlignmentChunkNode)
-    alignment_chunks = LimitedConnectionField(AlignmentChunkNode)
+    text_alignment_chunk = relay.Node.Field(TextAlignmentChunkNode)
+    text_alignment_chunks = LimitedConnectionField(TextAlignmentChunkNode)
 
     tree = Field(TreeNode, urn=String(required=True), up_to=String(required=False))
 

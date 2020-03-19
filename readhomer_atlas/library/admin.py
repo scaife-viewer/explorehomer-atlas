@@ -3,7 +3,7 @@ from django.contrib import admin
 from treebeard.admin import TreeAdmin
 from treebeard.forms import movenodeform_factory
 
-from .models import AlignmentChunk, Node, VersionAlignment
+from .models import Node, TextAlignment, TextAlignmentChunk
 
 
 @admin.register(Node)
@@ -11,16 +11,16 @@ class NodeAdmin(TreeAdmin):
     form = movenodeform_factory(Node)
 
 
-@admin.register(VersionAlignment)
-class VersionAlignmentAdmin(admin.ModelAdmin):
+@admin.register(TextAlignment)
+class TextAlignmentAdmin(admin.ModelAdmin):
     list_display = ("id", "name", "slug", "metadata", "version")
     list_filter = ("version",)
     search_fields = ("name", "slug")
     prepopulated_fields = {"slug": ["name"]}
 
 
-@admin.register(AlignmentChunk)
-class AlignmentChunkAdmin(admin.ModelAdmin):
+@admin.register(TextAlignmentChunk)
+class TextAlignmentChunkAdmin(admin.ModelAdmin):
     list_display = (
         "id",
         "citation",
