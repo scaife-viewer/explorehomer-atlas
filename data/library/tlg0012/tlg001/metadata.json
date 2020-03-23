@@ -48,6 +48,26 @@
           "value": "Homer, creator; Murray, A. T. (Augustus Taber), 1866-1940, translator"
         }
       ]
+    },
+    {
+      "urn": "urn:cts:greekLit:tlg0012.tlg001.perseus-eng4:",
+      "format": "cex",
+      "node_kind": "version",
+      "version_kind": "translation",
+      "first_passage_urn": "urn:cts:greekLit:tlg0012.tlg001.perseus-eng4:1.1-1.160",
+      "citation_scheme": ["book", "card"],
+      "label": [
+        {
+          "lang": "eng",
+          "value": "Iliad (English Translation by Butler)"
+        }
+      ],
+      "description": [
+        {
+          "lang": "eng",
+          "value": "Homer, creator; Butler, Samuel, 1835-1902, translator"
+        }
+      ]
     }
   ]
 }
