@@ -28,6 +28,26 @@
           "value": "Homer, creator; Murray, A. T. (Augustus Taber), 1866-1940, editor"
         }
       ]
+    },
+    {
+      "urn": "urn:cts:greekLit:tlg0012.tlg002.perseus-eng3:",
+      "format": "cex",
+      "node_kind": "version",
+      "version_kind": "edition",
+      "first_passage_urn": "urn:cts:greekLit:tlg0012.tlg002.perseus-eng3:1.1-1.178",
+      "citation_scheme": ["book", "card"],
+      "label": [
+        {
+          "lang": "eng",
+          "value": "Odyssey (English Translation by Murray)"
+        }
+      ],
+      "description": [
+        {
+          "lang": "eng",
+          "value": "Homer, creator; Murray, A. T. (Augustus Taber), 1866-1940, translator"
+        }
+      ]
     }
   ]
 }
