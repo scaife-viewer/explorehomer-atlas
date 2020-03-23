@@ -338,6 +338,7 @@ class TextAlignmentChunkFilterSet(
     TextPartsReferenceFilterMixin, django_filters.FilterSet
 ):
     reference = django_filters.CharFilter(method="reference_filter")
+    contains = django_filters.CharFilter(method="contains_reference_filter")
 
     class Meta:
         model = TextAlignmentChunk
@@ -352,6 +353,17 @@ class TextAlignmentChunkFilterSet(
         textparts_queryset = self.get_lowest_textparts_queryset(value)
         return queryset.filter(
             Q(start__in=textparts_queryset) | Q(end__in=textparts_queryset)
+        )
+
+    def contains_reference_filter(self, queryset, name, value):
+        textparts_queryset = self.get_lowest_textparts_queryset(value)
+        start = textparts_queryset.first()
+        end = textparts_queryset.last()
+        version = self.request.passage["version"]
+        return (
+            queryset.filter(version=version)
+            .filter(end__idx__gte=start.idx)
+            .filter(start__idx__lte=end.idx)
         )
 
 
