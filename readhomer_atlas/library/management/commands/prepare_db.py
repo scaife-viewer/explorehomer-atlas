@@ -3,7 +3,7 @@ import os
 from django.core.management import call_command
 from django.core.management.base import BaseCommand
 
-from readhomer_atlas.library import importers, tokenizers
+from readhomer_atlas.library import importers, named_entities, tokenizers
 
 
 class Command(BaseCommand):
@@ -26,3 +26,6 @@ class Command(BaseCommand):
 
         self.stdout.write("--[Tokenizing versions/exemplars]--")
         tokenizers.tokenize_all_text_parts()
+
+        self.stdout.write("--[Loading named entity annotations]--")
+        named_entities.apply_named_entities()
