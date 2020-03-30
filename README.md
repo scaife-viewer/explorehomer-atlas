@@ -100,6 +100,22 @@ Retrieve text part by its URN.
 }
 ```
 
+Retrieve tokens via a text part URN:
+```
+{
+  tokens (textPart_Urn:"urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1.1") {
+    edges {
+      node {
+        value
+        uuid
+        idx
+        position
+      }
+    }
+  }
+}
+```
+
 Retrieve a passage by its URN along with relevant metadata.
 ```
 {
@@ -123,6 +139,28 @@ Retrieve lines within a book within a particular version.
       node {
         ref
         textContent
+      }
+    }
+  }
+}
+```
+
+Retrieve lines and tokens within a book within a particular version.
+```
+{
+  textParts(urn_Startswith: "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:2.", first: 5) {
+    edges {
+      node {
+        ref
+        textContent
+        tokens {
+          edges {
+            node {
+              value
+              idx
+            }
+          }
+        }
       }
     }
   }

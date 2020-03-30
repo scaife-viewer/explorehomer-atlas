@@ -8,6 +8,7 @@ from graphene_django.filter import DjangoFilterConnectionField
 from graphene_django.utils import camelize
 
 from .models import Node as TextPart
+from .models import Token
 from .urn import URN
 from .utils import get_chunker
 
@@ -316,6 +317,13 @@ class TreeNode(ObjectType):
         return obj
 
 
+class TokenNode(DjangoObjectType):
+    class Meta:
+        filter_fields = ["text_part__urn"]
+        model = Token
+        interfaces = (relay.Node,)
+
+
 class Query(ObjectType):
     version = relay.Node.Field(VersionNode)
     versions = LimitedConnectionField(VersionNode)
@@ -328,6 +336,9 @@ class Query(ObjectType):
     passage_text_parts = LimitedConnectionField(PassageTextPartNode)
 
     tree = Field(TreeNode, urn=String(required=True), up_to=String(required=False))
+
+    token = relay.Node.Field(TokenNode)
+    tokens = LimitedConnectionField(TokenNode)
 
     def resolve_tree(obj, info, urn, **kwargs):
         return TextPart.dump_tree(
