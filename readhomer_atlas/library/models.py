@@ -118,3 +118,16 @@ class Token(models.Model):
 
     def __str__(self):
         return f"{self.text_part.urn} :: {self.value}"
+
+
+class NamedEntity(models.Model):
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True, null=True)
+    kind = models.CharField(max_length=6, choices=constants.NAMED_ENTITY_KINDS)
+    url = models.URLField(max_length=200)
+
+    idx = models.IntegerField(help_text="0-based index", blank=True, null=True)
+    urn = models.CharField(max_length=255, unique=True)
+
+    # @@@ we may also want to this over to URNs
+    tokens = models.ManyToManyField("library.Token", related_name="named_entities")

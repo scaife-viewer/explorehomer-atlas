@@ -74,3 +74,6 @@ CTS_URN_DEPTHS = {key: idx for idx, key in enumerate(CTS_URN_NODES, 1)}
 CTS_URN_RE = re.compile(rf"^{NID}:{CTS_NSS}:{NS}:{WORK}:{PASSAGE}$")
 
 CITE_URN = None
+
+NAMED_ENTITY_KIND_PERSON = "person"
+NAMED_ENTITY_KINDS = [(NAMED_ENTITY_KIND_PERSON, "Person")]
