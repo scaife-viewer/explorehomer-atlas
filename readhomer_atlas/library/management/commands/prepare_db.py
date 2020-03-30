@@ -3,7 +3,7 @@ import os
 from django.core.management import call_command
 from django.core.management.base import BaseCommand
 
-from readhomer_atlas.library import importers
+from readhomer_atlas.library import importers, tokenizers
 
 
 class Command(BaseCommand):
@@ -23,3 +23,6 @@ class Command(BaseCommand):
 
         self.stdout.write("--[Loading versions]--")
         importers.import_versions()
+
+        self.stdout.write("--[Tokenizing versions/exemplars]--")
+        tokenizers.tokenize_all_text_parts()
