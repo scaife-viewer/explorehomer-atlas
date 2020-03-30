@@ -7,6 +7,7 @@ from graphene_django import DjangoObjectType
 from graphene_django.filter import DjangoFilterConnectionField
 from graphene_django.utils import camelize
 
+from .models import NamedEntity
 from .models import Node as TextPart
 from .models import Token
 from .urn import URN
@@ -324,6 +325,13 @@ class TokenNode(DjangoObjectType):
         interfaces = (relay.Node,)
 
 
+class NamedEntityNode(DjangoObjectType):
+    class Meta:
+        filter_fields = ["urn"]
+        model = NamedEntity
+        interfaces = (relay.Node,)
+
+
 class Query(ObjectType):
     version = relay.Node.Field(VersionNode)
     versions = LimitedConnectionField(VersionNode)
@@ -339,6 +347,9 @@ class Query(ObjectType):
 
     token = relay.Node.Field(TokenNode)
     tokens = LimitedConnectionField(TokenNode)
+
+    named_entity = relay.Node.Field(NamedEntityNode)
+    named_entities = LimitedConnectionField(NamedEntityNode)
 
     def resolve_tree(obj, info, urn, **kwargs):
         return TextPart.dump_tree(
