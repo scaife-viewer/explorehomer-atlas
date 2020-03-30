@@ -219,6 +219,54 @@ level of `Version` nodes, maintaining the tree structure in the final payload.
 }
 ```
 
+Retrieve named entities
+```
+{
+  namedEntities (first: 10) {
+    edges {
+      node {
+        urn
+        title
+        description
+        url
+        tokens {
+          edges {
+            node {
+              value
+              textPart {
+                urn
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+Retrieve named entities for text part tokens
+```
+{
+  tokens(textPart_Urn:"urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1.16") {
+    edges {
+      node {
+        value,
+        namedEntities {
+          edges {
+            node {
+              title
+              description
+              url
+            }
+          }
+        }
+      }
+    }
+  }
+}
+```
+
 ## Tests
 
 Invoke tests via:
