@@ -28,6 +28,46 @@
           "value": "Homer, creator; Monro, D. B. (David Binning), 1836-1905, creator; Monro, D. B. (David Binning), 1836-1905, editor; Allen, Thomas W. (Thomas William), b. 1862, editor"
         }
       ]
+    },
+    {
+      "urn": "urn:cts:greekLit:tlg0012.tlg001.perseus-eng3:",
+      "format": "cex",
+      "node_kind": "version",
+      "version_kind": "translation",
+      "first_passage_urn": "urn:cts:greekLit:tlg0012.tlg001.perseus-eng3:1.1-1.130",
+      "citation_scheme": ["book", "card"],
+      "label": [
+        {
+          "lang": "eng",
+          "value": "Iliad (English Translation by Murray)"
+        }
+      ],
+      "description": [
+        {
+          "lang": "eng",
+          "value": "Homer, creator; Murray, A. T. (Augustus Taber), 1866-1940, translator"
+        }
+      ]
+    },
+    {
+      "urn": "urn:cts:greekLit:tlg0012.tlg001.perseus-eng4:",
+      "format": "cex",
+      "node_kind": "version",
+      "version_kind": "translation",
+      "first_passage_urn": "urn:cts:greekLit:tlg0012.tlg001.perseus-eng4:1.1-1.160",
+      "citation_scheme": ["book", "card"],
+      "label": [
+        {
+          "lang": "eng",
+          "value": "Iliad (English Translation by Butler)"
+        }
+      ],
+      "description": [
+        {
+          "lang": "eng",
+          "value": "Homer, creator; Butler, Samuel, 1835-1902, translator"
+        }
+      ]
     }
   ]
 }

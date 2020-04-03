@@ -28,12 +28,21 @@ class LibraryDataResolver:
     def populate_versions(self, dirpath, data):
         for version in data:
             version_part = version["urn"].rsplit(":", maxsplit=2)[1]
-            version_path = os.path.join(dirpath, f"{version_part}.txt")
 
+            if version.get("format") == "cex":
+                extension = "cex"
+            else:
+                extension = "txt"
+
+            version_path = os.path.join(dirpath, f"{version_part}.{extension}")
             if not os.path.exists(version_path):
                 raise FileNotFoundError(version_path)
 
-            self.versions[version["urn"]] = {"path": version_path, **version}
+            self.versions[version["urn"]] = {
+                "format": extension,
+                "path": version_path,
+                **version,
+            }
 
     def resolve_data_dir_path(self, data_dir_path):
         for dirpath, dirnames, filenames in sorted(os.walk(data_dir_path)):
@@ -83,6 +92,7 @@ class CTSImporter:
 
         self.nodes_to_create = []
         self.node_last_child_lookup = defaultdict()
+        self.format = version_data.get("format", "txt")
 
     @staticmethod
     def add_root(data):
@@ -202,9 +212,16 @@ class CTSImporter:
 
         return node_data
 
+    def extract_urn_and_tokens(self, line):
+        if self.format == "cex":
+            urn, tokens = line.strip().split("#", maxsplit=1)
+        else:
+            ref, tokens = line.strip().split(maxsplit=1)
+            urn = f"{self.urn}{ref}"
+        return URN(urn), tokens
+
     def generate_branch(self, line):
-        ref, tokens = line.strip().split(maxsplit=1)
-        node_urn = URN(f"{self.urn}{ref}")
+        node_urn, tokens = self.extract_urn_and_tokens(line)
         branch_data = self.destructure_urn(node_urn, tokens)
         for idx, node_data in enumerate(branch_data):
             node = self.nodes.get(node_data["urn"])
