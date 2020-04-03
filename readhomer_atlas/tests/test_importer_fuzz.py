@@ -2,7 +2,7 @@ import copy
 
 import hypothesis
 
-from readhomer_atlas.library.importers import CTSImporter, Library
+from readhomer_atlas.library.importers.versions import CTSImporter, Library
 from readhomer_atlas.library.urn import URN
 from readhomer_atlas.tests.strategies import URNs
 

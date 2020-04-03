@@ -181,6 +181,49 @@ level of `Version` nodes, maintaining the tree structure in the final payload.
 }
 ```
 
+## Text Alignments
+
+### Sample Queries
+
+Get text alignment chunks for a given reference:
+```
+{
+  textAlignmentChunks(reference: "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1.8") {
+    edges {
+      cursor
+      node {
+        id
+        citation
+        items
+        alignment {
+          name
+        }
+      }
+    }
+  }
+}
+```
+
+Get a version annotated with text alignment chunks:
+```
+{
+  versions (urn:"urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:") {
+    edges {
+      node {
+        metadata,
+        textAlignmentChunks (first:2){
+          edges {
+            node {
+              citation
+            }
+          }
+        }
+      }
+    }
+  }
+}
+```
+
 ## Tests
 
 Invoke tests via:

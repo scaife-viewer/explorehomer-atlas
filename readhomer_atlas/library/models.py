@@ -12,6 +12,58 @@ from treebeard.mp_tree import MP_Node
 from readhomer_atlas import constants
 
 
+class TextAlignment(models.Model):
+    name = models.CharField(blank=True, null=True, max_length=255)
+    slug = models.SlugField()
+    metadata = JSONField(default=dict, blank=True)
+
+    # @@@
+    version = models.ForeignKey(
+        "library.Node", related_name="text_alignments", on_delete=models.CASCADE
+    )
+
+    def __str__(self):
+        return self.name
+
+
+class TextAlignmentChunk(models.Model):
+    # denormed from start / end
+    citation = models.CharField(max_length=13)
+    items = JSONField(default=list, blank=True)
+    metadata = JSONField(default=dict, blank=True)
+    idx = models.IntegerField(help_text="0-based index")
+
+    # @@@
+    version = models.ForeignKey(
+        "library.Node", related_name="text_alignment_chunks", on_delete=models.CASCADE
+    )
+    alignment = models.ForeignKey(
+        "library.TextAlignment",
+        related_name="text_alignment_chunks",
+        on_delete=models.CASCADE,
+    )
+    start = models.ForeignKey(
+        "library.Node", related_name="+", on_delete=models.CASCADE
+    )
+    end = models.ForeignKey("library.Node", related_name="+", on_delete=models.CASCADE)
+
+    class Meta:
+        ordering = ["idx"]
+
+    def __str__(self):
+        return f"{self.version} || {self.alignment} [citation={self.citation}]"
+
+    @property
+    def contains(self):
+        text_part_kind = self.start.kind
+        return (
+            self.version.get_descendants()
+            .filter(kind=text_part_kind)
+            .filter(idx__gte=self.start.idx)
+            .filter(idx__lte=self.end.idx)
+        )
+
+
 class Node(MP_Node):
     # @@@ used to pivot siblings; may be possible if we hook into path field
     idx = models.IntegerField(help_text="0-based index", blank=True, null=True)

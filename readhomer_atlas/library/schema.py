@@ -8,6 +8,7 @@ from graphene_django.filter import DjangoFilterConnectionField
 from graphene_django.utils import camelize
 
 from .models import Node as TextPart
+from .models import TextAlignment, TextAlignmentChunk
 from .urn import URN
 from .utils import get_chunker
 
@@ -54,7 +55,6 @@ class LimitedConnectionField(DjangoFilterConnectionField):
         last = resolver_kwargs.get("last")
         if not first and not last:
             resolver_kwargs["first"] = max_limit
-
         return super(LimitedConnectionField, cls).connection_resolver(
             resolver,
             connection,
@@ -162,6 +162,7 @@ class PassageTextPartConnection(Connection):
         return camelize(data)
 
 
+# @@@ consider refactoring with TextPartsReferenceFilterMixin
 class TextPartFilterSet(django_filters.FilterSet):
     reference = django_filters.CharFilter(method="reference_filter")
 
@@ -173,7 +174,10 @@ class TextPartFilterSet(django_filters.FilterSet):
             refs.append(end)
         predicate = Q(ref__in=refs)
         queryset = queryset.filter(
-            urn__startswith=version_urn, depth=len(start.split(".")) + 1
+            # @@@ this reference filter doesn't work because of
+            # depth assumptions
+            urn__startswith=version_urn,
+            depth=len(start.split(".")) + 1,
         )
         return filter_via_ref_predicate(self, queryset, predicate)
 
@@ -189,14 +193,7 @@ class TextPartFilterSet(django_filters.FilterSet):
         }
 
 
-# @@@ we might share parts of this reference filter to TextPartFilterSet
-class PassageTextPartFilterSet(django_filters.FilterSet):
-    reference = django_filters.CharFilter(method="reference_filter")
-
-    class Meta:
-        model = TextPart
-        fields = []
-
+class TextPartsReferenceFilterMixin:
     def _add_passage_to_context(self, reference):
         # @@@ instance.request is an alias for info.context and used to store
         # context data across filtersets
@@ -245,18 +242,28 @@ class PassageTextPartFilterSet(django_filters.FilterSet):
 
         return predicate
 
-    def reference_filter(self, queryset, name, value):
+    def get_lowest_textparts_queryset(self, value):
         self._add_passage_to_context(value)
-
         version = self.request.passage["version"]
         citation_scheme = version.metadata["citation_scheme"]
         max_depth = version.get_descendants().last().depth
-        max_rank = len(citation_scheme)
 
+        max_rank = len(citation_scheme)
         queryset = version.get_descendants().filter(depth=max_depth)
         _, ref = value.rsplit(":", maxsplit=1)
         predicate = self._build_predicate(queryset, ref, max_rank)
         return filter_via_ref_predicate(self, queryset, predicate)
+
+
+class PassageTextPartFilterSet(TextPartsReferenceFilterMixin, django_filters.FilterSet):
+    reference = django_filters.CharFilter(method="reference_filter")
+
+    class Meta:
+        model = TextPart
+        fields = []
+
+    def reference_filter(self, queryset, name, value):
+        return self.get_lowest_textparts_queryset(value)
 
 
 class AbstractTextPartNode(DjangoObjectType):
@@ -283,6 +290,8 @@ class AbstractTextPartNode(DjangoObjectType):
 
 
 class VersionNode(AbstractTextPartNode):
+    text_alignment_chunks = LimitedConnectionField(lambda: TextAlignmentChunkNode)
+
     @classmethod
     def get_queryset(cls, queryset, info):
         return queryset.filter(kind="version").order_by("urn")
@@ -316,6 +325,57 @@ class TreeNode(ObjectType):
         return obj
 
 
+class TextAlignmentNode(DjangoObjectType):
+    metadata = generic.GenericScalar()
+
+    class Meta:
+        model = TextAlignment
+        interfaces = (relay.Node,)
+        filter_fields = ["name", "slug"]
+
+
+class TextAlignmentChunkFilterSet(
+    TextPartsReferenceFilterMixin, django_filters.FilterSet
+):
+    reference = django_filters.CharFilter(method="reference_filter")
+    contains = django_filters.CharFilter(method="contains_reference_filter")
+
+    class Meta:
+        model = TextAlignmentChunk
+        fields = [
+            "start",
+            "end",
+            "version__urn",
+            "idx",
+        ]
+
+    def reference_filter(self, queryset, name, value):
+        textparts_queryset = self.get_lowest_textparts_queryset(value)
+        return queryset.filter(
+            Q(start__in=textparts_queryset) | Q(end__in=textparts_queryset)
+        )
+
+    def contains_reference_filter(self, queryset, name, value):
+        textparts_queryset = self.get_lowest_textparts_queryset(value)
+        start = textparts_queryset.first()
+        end = textparts_queryset.last()
+        version = self.request.passage["version"]
+        return (
+            queryset.filter(version=version)
+            .filter(end__idx__gte=start.idx)
+            .filter(start__idx__lte=end.idx)
+        )
+
+
+class TextAlignmentChunkNode(DjangoObjectType):
+    items = generic.GenericScalar()
+
+    class Meta:
+        model = TextAlignmentChunk
+        interfaces = (relay.Node,)
+        filterset_class = TextAlignmentChunkFilterSet
+
+
 class Query(ObjectType):
     version = relay.Node.Field(VersionNode)
     versions = LimitedConnectionField(VersionNode)
@@ -326,6 +386,9 @@ class Query(ObjectType):
     # No passage_text_part endpoint available here like the others because we
     # will only support querying by reference.
     passage_text_parts = LimitedConnectionField(PassageTextPartNode)
+
+    text_alignment_chunk = relay.Node.Field(TextAlignmentChunkNode)
+    text_alignment_chunks = LimitedConnectionField(TextAlignmentChunkNode)
 
     tree = Field(TreeNode, urn=String(required=True), up_to=String(required=False))
 
