@@ -7,6 +7,7 @@ from django.db import models
 # @@@ https://code.djangoproject.com/ticket/12990
 from django_extensions.db.fields.json import JSONField
 from graphene_django.utils import camelize
+from sortedm2m.fields import SortedManyToManyField
 from treebeard.mp_tree import MP_Node
 
 from readhomer_atlas import constants
@@ -62,6 +63,24 @@ class TextAlignmentChunk(models.Model):
             .filter(idx__gte=self.start.idx)
             .filter(idx__lte=self.end.idx)
         )
+
+
+TEXT_ANNOTATION_KIND_SCHOLIA = "scholia"
+TEXT_ANNOTATION_KIND_CHOICES = ((TEXT_ANNOTATION_KIND_SCHOLIA, "Scholia"),)
+
+
+class TextAnnotation(models.Model):
+    kind = models.CharField(
+        max_length=7,
+        default=TEXT_ANNOTATION_KIND_SCHOLIA,
+        choices=TEXT_ANNOTATION_KIND_CHOICES,
+    )
+    data = JSONField(default=dict, blank=True)
+    idx = models.IntegerField(help_text="0-based index")
+
+    text_parts = SortedManyToManyField("library.Node", related_name="text_annotations")
+
+    urn = models.CharField(max_length=255, blank=True, null=True)
 
 
 class Node(MP_Node):
