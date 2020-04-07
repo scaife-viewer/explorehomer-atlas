@@ -82,6 +82,15 @@ class TextAnnotation(models.Model):
 
     urn = models.CharField(max_length=255, blank=True, null=True)
 
+    def resolve_references(self):
+        assert "references" in self.data
+        desired_urns = set(self.data["references"])
+        reference_objs = list(Node.objects.filter(urn__in=desired_urns))
+        resolved_urns = set([r.urn for r in reference_objs])
+        delta_urns = desired_urns.symmetric_difference(resolved_urns)
+        assert not delta_urns
+        self.text_parts.set(reference_objs)
+
 
 class Node(MP_Node):
     # @@@ used to pivot siblings; may be possible if we hook into path field
