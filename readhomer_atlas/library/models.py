@@ -1,4 +1,6 @@
 import json
+import re
+from collections import Counter
 
 from django.conf import settings
 from django.core import serializers
@@ -86,6 +88,7 @@ class Token(models.Model):
 
     # @@@ consider JSON or EAV to store / filter attrs
     word_value = models.CharField(max_length=255, blank=True, null=True)
+    subref_value = models.CharField(max_length=255, blank=True, null=True)
     uuid = models.CharField(max_length=255, blank=True, null=True)
     lemma = models.CharField(max_length=255, blank=True, null=True)
     gloss = models.CharField(max_length=255, blank=True, null=True)
@@ -98,19 +101,33 @@ class Token(models.Model):
     position = models.IntegerField()
     idx = models.IntegerField(help_text="0-based index")
 
+    @staticmethod
+    def get_word_value(value):
+        return re.sub(r"[^\w]", "", value)
+
     @classmethod
     def tokenize(cls, text_part_node, counters):
         pieces = text_part_node.text_content.split()
         to_create = []
+        # @@@ compare with scaife-viewer/scaife-viewer
+        # see discussion on https://github.com/scaife-viewer/scaife-viewer/issues/162
+        subref_counter = Counter()
         for pos, piece in enumerate(pieces):
+            word_value = cls.get_word_value(piece)
+
+            subref_counter[word_value] += 1
+            subref_value = f"{word_value}[{subref_counter[word_value]}]"
+
             to_create.append(
                 cls(
                     text_part=text_part_node,
                     value=piece,
+                    word_value=word_value,
                     position=pos + 1,
                     # @@@ not a true uuid
                     uuid=f"t{text_part_node.ref}_{pos}",
                     idx=counters["token_idx"],
+                    subref_value=subref_value,
                 )
             )
             counters["token_idx"] += 1
