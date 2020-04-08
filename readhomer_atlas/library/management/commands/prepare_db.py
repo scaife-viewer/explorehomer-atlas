@@ -31,7 +31,7 @@ class Command(BaseCommand):
         importers.text_annotations.import_text_annotations(reset=True)
 
         self.stdout.write("--[Tokenizing versions/exemplars]--")
-        tokenizers.tokenize_all_text_parts(reset=true)
+        tokenizers.tokenize_all_text_parts(reset=True)
 
         self.stdout.write("--[Loading named entity annotations]--")
         named_entities.apply_named_entities()

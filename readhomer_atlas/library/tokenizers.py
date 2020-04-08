@@ -22,7 +22,5 @@ def tokenize_text_parts(version_exemplar_urn, force=True):
 
 
 def tokenize_all_text_parts(reset=False):
-    if reset:
-        Token.objects.all().delete()
     for version_exemplar_node in Node.objects.filter(kind__in=["version", "exemplar"]):
-        tokenize_text_parts(version_exemplar_node.urn, force=force)
+        tokenize_text_parts(version_exemplar_node.urn, force=reset)
