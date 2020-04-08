@@ -1,6 +1,6 @@
 import json
 import re
-from collections import Counter
+from collections import defaultdict
 
 from django.conf import settings
 from django.core import serializers
@@ -107,22 +107,32 @@ class Token(models.Model):
 
     @classmethod
     def tokenize(cls, text_part_node, counters):
+        # @@@ compare with passage-based tokenization on
+        # scaife-viewer/scaife-viewer.  See discussion on
+        # https://github.com/scaife-viewer/scaife-viewer/issues/162
+        #
+        # For this implementation, we always calculate the index
+        # within the text part, _not_ the passage. Also see
+        # http://www.homermultitext.org/hmt-doc/cite/cts-subreferences.html
+        idx = defaultdict(int)
         pieces = text_part_node.text_content.split()
         to_create = []
-        # @@@ compare with scaife-viewer/scaife-viewer
-        # see discussion on https://github.com/scaife-viewer/scaife-viewer/issues/162
-        subref_counter = Counter()
         for pos, piece in enumerate(pieces):
-            word_value = cls.get_word_value(piece)
-
-            subref_counter[word_value] += 1
-            subref_value = f"{word_value}[{subref_counter[word_value]}]"
+            # @@@ the word value will discard punctuation or
+            # whitespace, which means we only support "true"
+            # subrefs for word tokens
+            w = cls.get_word_value(piece)
+            wl = len(w)
+            for wk in (w[i : j + 1] for i in range(wl) for j in range(i, wl)):
+                idx[wk] += 1
+            subref_idx = idx[w]
+            subref_value = f"{w}[{subref_idx}]"
 
             to_create.append(
                 cls(
                     text_part=text_part_node,
                     value=piece,
-                    word_value=word_value,
+                    word_value=w,
                     position=pos + 1,
                     # @@@ not a true uuid
                     uuid=f"t{text_part_node.ref}_{pos}",
