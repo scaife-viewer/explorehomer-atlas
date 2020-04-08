@@ -28,7 +28,6 @@ def apply_named_entities(reset=True):
         for row in reader:
             named_entity = lookup[row["named_entity_urn"]]
             text_part = Node.objects.get(urn=row["ref"])
-            # @@@ resolve idx / position mismatch
-            position = int(row["token_position"]) + 1
+            position = int(row["token_position"])
             tokens = text_part.tokens.filter(position__in=[position])
             named_entity.tokens.add(*tokens)
