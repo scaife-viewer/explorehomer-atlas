@@ -219,6 +219,98 @@ level of `Version` nodes, maintaining the tree structure in the final payload.
 }
 ```
 
+## Text Alignments
+
+### Sample Queries
+
+Get text alignment chunks for a given reference:
+```
+{
+  textAlignmentChunks(reference: "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1.8") {
+    edges {
+      cursor
+      node {
+        id
+        citation
+        items
+        alignment {
+          name
+        }
+      }
+    }
+  }
+}
+```
+
+Get a version annotated with text alignment chunks:
+```
+{
+  versions (urn:"urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:") {
+    edges {
+      node {
+        metadata,
+        textAlignmentChunks (first:2){
+          edges {
+            node {
+              citation
+            }
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+## Text Annotations
+
+### Sample Queries
+
+Retrieve text annotations
+```
+{
+  textAnnotations {
+    edges {
+      node {
+        urn
+        data
+        textParts {
+          edges {
+            node {
+              urn
+              textContent
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+```
+Retrieve text annotations for a given passage
+```
+{
+  passageTextParts(reference:"urn:cts:greekLit:tlg0012.tlg001.msA:1.1") {
+    edges {
+      node {
+        urn
+        textAnnotations {
+          edges {
+            node {
+              urn
+              data
+            }
+          }
+        }
+      }
+    }
+  }
+}
+```
+## Named Entities
+
+### Sample Queries
 Retrieve named entities
 ```
 {
@@ -267,6 +359,7 @@ Retrieve named entities for text part tokens
 }
 ```
 
+
 ## Tests
 
 Invoke tests via:
@@ -280,3 +373,4 @@ pytest
 PRs against `develop` will automatically be deployed to Heroku as a ["review app"](https://devcenter.heroku.com/articles/github-integration-review-apps) after tests pass on CircleCI.
 
 The review app for a PR will be deleted when the PR is closed / merged, or after 30 days after no new commits are added to an open PR.
+

@@ -9,9 +9,95 @@ from django.db import models
 # @@@ https://code.djangoproject.com/ticket/12990
 from django_extensions.db.fields.json import JSONField
 from graphene_django.utils import camelize
+from sortedm2m.fields import SortedManyToManyField
 from treebeard.mp_tree import MP_Node
 
 from readhomer_atlas import constants
+
+
+class TextAlignment(models.Model):
+    name = models.CharField(blank=True, null=True, max_length=255)
+    slug = models.SlugField()
+    metadata = JSONField(default=dict, blank=True)
+
+    # @@@
+    version = models.ForeignKey(
+        "library.Node", related_name="text_alignments", on_delete=models.CASCADE
+    )
+
+    def __str__(self):
+        return self.name
+
+
+class TextAlignmentChunk(models.Model):
+    # denormed from start / end
+    citation = models.CharField(max_length=13)
+    items = JSONField(default=list, blank=True)
+    metadata = JSONField(default=dict, blank=True)
+    idx = models.IntegerField(help_text="0-based index")
+
+    # @@@
+    version = models.ForeignKey(
+        "library.Node", related_name="text_alignment_chunks", on_delete=models.CASCADE
+    )
+    alignment = models.ForeignKey(
+        "library.TextAlignment",
+        related_name="text_alignment_chunks",
+        on_delete=models.CASCADE,
+    )
+    start = models.ForeignKey(
+        "library.Node", related_name="+", on_delete=models.CASCADE
+    )
+    end = models.ForeignKey("library.Node", related_name="+", on_delete=models.CASCADE)
+
+    class Meta:
+        ordering = ["idx"]
+
+    def __str__(self):
+        return f"{self.version} || {self.alignment} [citation={self.citation}]"
+
+    @property
+    def contains(self):
+        text_part_kind = self.start.kind
+        return (
+            self.version.get_descendants()
+            .filter(kind=text_part_kind)
+            .filter(idx__gte=self.start.idx)
+            .filter(idx__lte=self.end.idx)
+        )
+
+
+TEXT_ANNOTATION_KIND_SCHOLIA = "scholia"
+TEXT_ANNOTATION_KIND_CHOICES = ((TEXT_ANNOTATION_KIND_SCHOLIA, "Scholia"),)
+
+
+class TextAnnotation(models.Model):
+    kind = models.CharField(
+        max_length=7,
+        default=TEXT_ANNOTATION_KIND_SCHOLIA,
+        choices=TEXT_ANNOTATION_KIND_CHOICES,
+    )
+    data = JSONField(default=dict, blank=True)
+    idx = models.IntegerField(help_text="0-based index")
+
+    text_parts = SortedManyToManyField("library.Node", related_name="text_annotations")
+
+    urn = models.CharField(max_length=255, blank=True, null=True)
+
+    def resolve_references(self):
+        if "references" not in self.data:
+            print(f'No references found [urn="{self.urn}"]')
+            return
+        desired_urns = set(self.data["references"])
+        reference_objs = list(Node.objects.filter(urn__in=desired_urns))
+        resolved_urns = set([r.urn for r in reference_objs])
+        delta_urns = desired_urns.symmetric_difference(resolved_urns)
+
+        if delta_urns:
+            print(
+                f'Could not resolve all references, probably to bad data in the CEX file [urn="{self.urn}" unresolved_urns="{",".join(delta_urns)}"]'
+            )
+        self.text_parts.set(reference_objs)
 
 
 class Node(MP_Node):

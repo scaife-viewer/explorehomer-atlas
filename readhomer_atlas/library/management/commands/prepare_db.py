@@ -24,8 +24,15 @@ class Command(BaseCommand):
         self.stdout.write("--[Loading versions]--")
         importers.import_versions()
 
+        self.stdout.write("--[Loading alignments]--")
+        importers.alignments.import_alignments(reset=True)
+
+        self.stdout.write("--[Loading text annotations]--")
+        importers.text_annotations.import_text_annotations(reset=True)
+
         self.stdout.write("--[Tokenizing versions/exemplars]--")
-        tokenizers.tokenize_all_text_parts()
+        tokenizers.tokenize_all_text_parts(reset=true)
 
         self.stdout.write("--[Loading named entity annotations]--")
         named_entities.apply_named_entities()
+        importers.versions.import_versions(reset=True)

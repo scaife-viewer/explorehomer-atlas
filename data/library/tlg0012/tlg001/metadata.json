@@ -30,6 +30,46 @@
       ]
     },
     {
+      "urn": "urn:cts:greekLit:tlg0012.tlg001.msA:",
+      "format": "cex",
+      "node_kind": "version",
+      "version_kind": "edition",
+      "first_passage_urn": "urn:cts:greekLit:tlg0012.tlg001.msA:1.1-1.25",
+      "citation_scheme": ["book", "line"],
+      "label": [
+        {
+          "lang": "eng",
+          "value": "Iliad (Venetus A (Marciana 454 = 822)"
+        }
+      ],
+      "description": [
+        {
+          "lang": "eng",
+          "value": "The manuscript Marcianus Graecus Z. 454 [= 822], known to Homeric scholars as the Venetus A, is the oldest complete text of the Iliad in existence."
+        }
+      ]
+    },
+    {
+      "urn": "urn:cts:greekLit:tlg0012.tlg001.msA-folios:",
+      "format": "cex",
+      "node_kind": "version",
+      "version_kind": "edition",
+      "first_passage_urn": "urn:cts:greekLit:tlg0012.tlg001.msA-folios:12r.1.1-12r.1.25",
+      "citation_scheme": ["folio", "book", "line"],
+      "label": [
+        {
+          "lang": "eng",
+          "value": "Iliad (Venetus A (Marciana 454 = 822), folios"
+        }
+      ],
+      "description": [
+        {
+          "lang": "eng",
+          "value": "The manuscript Marcianus Graecus Z. 454 [= 822], known to Homeric scholars as the Venetus A, is the oldest complete text of the Iliad in existence."
+        }
+      ]
+    },
+    {
       "urn": "urn:cts:greekLit:tlg0012.tlg001.perseus-eng3:",
       "format": "cex",
       "node_kind": "version",
