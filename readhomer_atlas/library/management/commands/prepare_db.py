@@ -3,7 +3,7 @@ import os
 from django.core.management import call_command
 from django.core.management.base import BaseCommand
 
-from readhomer_atlas.library import importers, named_entities, tokenizers
+from readhomer_atlas.library import importers, tokenizers
 
 
 class Command(BaseCommand):
@@ -22,7 +22,7 @@ class Command(BaseCommand):
         call_command("migrate")
 
         self.stdout.write("--[Loading versions]--")
-        importers.import_versions()
+        importers.versions.import_versions()
 
         self.stdout.write("--[Loading alignments]--")
         importers.alignments.import_alignments(reset=True)
@@ -34,5 +34,4 @@ class Command(BaseCommand):
         tokenizers.tokenize_all_text_parts(reset=True)
 
         self.stdout.write("--[Loading named entity annotations]--")
-        named_entities.apply_named_entities()
-        importers.versions.import_versions(reset=True)
+        importers.named_entities.apply_named_entities(reset=True)

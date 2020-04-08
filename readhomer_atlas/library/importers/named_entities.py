@@ -1,10 +1,10 @@
 import csv
 
-from .models import NamedEntity, Node
+from ..models import NamedEntity, Node
 
 
-def apply_named_entities(force=True):
-    if force:
+def apply_named_entities(reset=True):
+    if reset:
         NamedEntity.objects.all().delete()
 
     named_entites_path = "data/annotations/named-entities/raw/named_entities.csv"
