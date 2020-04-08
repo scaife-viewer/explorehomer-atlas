@@ -8,7 +8,7 @@ from graphene_django.filter import DjangoFilterConnectionField
 from graphene_django.utils import camelize
 
 from .models import Node as TextPart
-from .models import TextAlignment, TextAlignmentChunk
+from .models import TextAlignment, TextAlignmentChunk, TextAnnotation
 from .urn import URN
 from .utils import get_chunker
 
@@ -376,6 +376,15 @@ class TextAlignmentChunkNode(DjangoObjectType):
         filterset_class = TextAlignmentChunkFilterSet
 
 
+class TextAnnotationNode(DjangoObjectType):
+    data = generic.GenericScalar()
+
+    class Meta:
+        model = TextAnnotation
+        interfaces = (relay.Node,)
+        filter_fields = ["urn"]
+
+
 class Query(ObjectType):
     version = relay.Node.Field(VersionNode)
     versions = LimitedConnectionField(VersionNode)
@@ -389,6 +398,9 @@ class Query(ObjectType):
 
     text_alignment_chunk = relay.Node.Field(TextAlignmentChunkNode)
     text_alignment_chunks = LimitedConnectionField(TextAlignmentChunkNode)
+
+    text_annotation = relay.Node.Field(TextAnnotationNode)
+    text_annotations = LimitedConnectionField(TextAnnotationNode)
 
     tree = Field(TreeNode, urn=String(required=True), up_to=String(required=False))
 

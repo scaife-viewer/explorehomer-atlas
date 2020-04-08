@@ -224,6 +224,53 @@ Get a version annotated with text alignment chunks:
 }
 ```
 
+## Text Annotations
+
+### Sample Queries
+
+Retrieve text annotations
+```
+{
+  textAnnotations {
+    edges {
+      node {
+        urn
+        data
+        textParts {
+          edges {
+            node {
+              urn
+              textContent
+            }
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+Retrieve text annotations for a given passage
+```
+{
+  passageTextParts(reference:"urn:cts:greekLit:tlg0012.tlg001.msA:1.1") {
+    edges {
+      node {
+        urn
+        textAnnotations {
+          edges {
+            node {
+              urn
+              data
+            }
+          }
+        }
+      }
+    }
+  }
+}
+```
+
 ## Tests
 
 Invoke tests via:

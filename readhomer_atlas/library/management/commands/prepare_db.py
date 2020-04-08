@@ -26,3 +26,6 @@ class Command(BaseCommand):
 
         self.stdout.write("--[Loading alignments]--")
         importers.alignments.import_alignments(reset=True)
+
+        self.stdout.write("--[Loading text annotations]--")
+        importers.text_annotations.import_text_annotations(reset=True)
