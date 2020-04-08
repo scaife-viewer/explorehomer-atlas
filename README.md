@@ -269,7 +269,7 @@ Get a version annotated with text alignment chunks:
 Retrieve text annotations
 ```
 {
-  textAnnotations {
+  textAnnotations(first: 10) {
     edges {
       node {
         urn

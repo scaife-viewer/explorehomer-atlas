@@ -242,5 +242,5 @@ class NamedEntity(models.Model):
     idx = models.IntegerField(help_text="0-based index", blank=True, null=True)
     urn = models.CharField(max_length=255, unique=True)
 
-    # @@@ we may also want to this over to URNs
+    # @@@ we may also want structure these references using URNs
     tokens = models.ManyToManyField("library.Token", related_name="named_entities")

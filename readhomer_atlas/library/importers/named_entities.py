@@ -3,7 +3,7 @@ import csv
 from ..models import NamedEntity, Node
 
 
-def apply_named_entities(reset=True):
+def apply_named_entities(reset=False):
     if reset:
         NamedEntity.objects.all().delete()
 
