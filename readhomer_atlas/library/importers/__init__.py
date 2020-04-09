@@ -1,4 +1,4 @@
-from . import alignments, text_annotations, versions
+from . import alignments, named_entities, text_annotations, versions
 
 
-__all__ = ["alignments", "versions", "text_annotations"]
+__all__ = ["alignments", "named_entities", "text_annotations", "versions"]

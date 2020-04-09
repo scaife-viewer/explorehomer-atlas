@@ -7,8 +7,9 @@ from graphene_django import DjangoObjectType
 from graphene_django.filter import DjangoFilterConnectionField
 from graphene_django.utils import camelize
 
+from .models import NamedEntity
 from .models import Node as TextPart
-from .models import TextAlignment, TextAlignmentChunk, TextAnnotation
+from .models import TextAlignment, TextAlignmentChunk, TextAnnotation, Token
 from .urn import URN
 from .utils import get_chunker
 
@@ -385,6 +386,26 @@ class TextAnnotationNode(DjangoObjectType):
         filter_fields = ["urn"]
 
 
+class TokenFilterSet(django_filters.FilterSet):
+    class Meta:
+        model = Token
+        fields = {"text_part__urn": ["exact", "startswith"]}
+
+
+class TokenNode(DjangoObjectType):
+    class Meta:
+        model = Token
+        interfaces = (relay.Node,)
+        filterset_class = TokenFilterSet
+
+
+class NamedEntityNode(DjangoObjectType):
+    class Meta:
+        filter_fields = ["urn"]
+        model = NamedEntity
+        interfaces = (relay.Node,)
+
+
 class Query(ObjectType):
     version = relay.Node.Field(VersionNode)
     versions = LimitedConnectionField(VersionNode)
@@ -403,6 +424,12 @@ class Query(ObjectType):
     text_annotations = LimitedConnectionField(TextAnnotationNode)
 
     tree = Field(TreeNode, urn=String(required=True), up_to=String(required=False))
+
+    token = relay.Node.Field(TokenNode)
+    tokens = LimitedConnectionField(TokenNode)
+
+    named_entity = relay.Node.Field(NamedEntityNode)
+    named_entities = LimitedConnectionField(NamedEntityNode)
 
     def resolve_tree(obj, info, urn, **kwargs):
         return TextPart.dump_tree(

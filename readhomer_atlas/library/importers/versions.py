@@ -268,7 +268,7 @@ def get_first_value_for_language(values, lang):
     return next(iter(filter(lambda x: x["lang"] == lang, values)), None).get("value")
 
 
-def import_versions(reset=True):
+def import_versions(reset=False):
     if reset:
         Node.objects.filter(kind="nid").delete()
 

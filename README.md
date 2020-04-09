@@ -100,6 +100,22 @@ Retrieve text part by its URN.
 }
 ```
 
+Retrieve tokens via a text part URN:
+```
+{
+  tokens (textPart_Urn:"urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1.1") {
+    edges {
+      node {
+        value
+        uuid
+        idx
+        position
+      }
+    }
+  }
+}
+```
+
 Retrieve a passage by its URN along with relevant metadata.
 ```
 {
@@ -123,6 +139,28 @@ Retrieve lines within a book within a particular version.
       node {
         ref
         textContent
+      }
+    }
+  }
+}
+```
+
+Retrieve lines and tokens within a book within a particular version.
+```
+{
+  textParts(urn_Startswith: "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:2.", first: 5) {
+    edges {
+      node {
+        ref
+        textContent
+        tokens {
+          edges {
+            node {
+              value
+              idx
+            }
+          }
+        }
       }
     }
   }
@@ -231,7 +269,7 @@ Get a version annotated with text alignment chunks:
 Retrieve text annotations
 ```
 {
-  textAnnotations {
+  textAnnotations(first: 10) {
     edges {
       node {
         urn
@@ -248,8 +286,8 @@ Retrieve text annotations
     }
   }
 }
-```
 
+```
 Retrieve text annotations for a given passage
 ```
 {
@@ -270,6 +308,57 @@ Retrieve text annotations for a given passage
   }
 }
 ```
+## Named Entities
+
+### Sample Queries
+Retrieve named entities
+```
+{
+  namedEntities (first: 10) {
+    edges {
+      node {
+        urn
+        title
+        description
+        url
+        tokens {
+          edges {
+            node {
+              value
+              textPart {
+                urn
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+Retrieve named entities for text part tokens
+```
+{
+  tokens(textPart_Urn:"urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1.16") {
+    edges {
+      node {
+        value,
+        namedEntities {
+          edges {
+            node {
+              title
+              description
+              url
+            }
+          }
+        }
+      }
+    }
+  }
+}
+```
+
 
 ## Tests
 
@@ -284,3 +373,4 @@ pytest
 PRs against `develop` will automatically be deployed to Heroku as a ["review app"](https://devcenter.heroku.com/articles/github-integration-review-apps) after tests pass on CircleCI.
 
 The review app for a PR will be deleted when the PR is closed / merged, or after 30 days after no new commits are added to an open PR.
+

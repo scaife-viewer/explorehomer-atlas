@@ -1,4 +1,6 @@
 import json
+import re
+from collections import defaultdict
 
 from django.conf import settings
 from django.core import serializers
@@ -161,3 +163,87 @@ class Node(MP_Node):
                 parentobj["children"].append(newobj)
             index[path] = newobj
         return tree
+
+
+class Token(models.Model):
+    text_part = models.ForeignKey(
+        "Node", related_name="tokens", on_delete=models.CASCADE
+    )
+
+    value = models.CharField(max_length=255)
+
+    # @@@ consider JSON or EAV to store / filter attrs
+    word_value = models.CharField(max_length=255, blank=True, null=True)
+    subref_value = models.CharField(max_length=255, blank=True, null=True)
+    uuid = models.CharField(max_length=255, blank=True, null=True)
+    lemma = models.CharField(max_length=255, blank=True, null=True)
+    gloss = models.CharField(max_length=255, blank=True, null=True)
+    part_of_speech = models.CharField(max_length=255, blank=True, null=True)
+    tag = models.CharField(max_length=255, blank=True, null=True)
+    case = models.CharField(max_length=255, blank=True, null=True)
+    mood = models.CharField(max_length=255, blank=True, null=True)
+    named_entity = models.CharField(max_length=255, blank=True, null=True)
+
+    position = models.IntegerField()
+    idx = models.IntegerField(help_text="0-based index")
+
+    @staticmethod
+    def get_word_value(value):
+        return re.sub(r"[^\w]", "", value)
+
+    @classmethod
+    def tokenize(cls, text_part_node, counters):
+        # @@@ compare with passage-based tokenization on
+        # scaife-viewer/scaife-viewer.  See discussion on
+        # https://github.com/scaife-viewer/scaife-viewer/issues/162
+        #
+        # For this implementation, we always calculate the index
+        # within the text part, _not_ the passage. Also see
+        # http://www.homermultitext.org/hmt-doc/cite/cts-subreferences.html
+        idx = defaultdict(int)
+        pieces = text_part_node.text_content.split()
+        to_create = []
+        for pos, piece in enumerate(pieces):
+            # @@@ the word value will discard punctuation or
+            # whitespace, which means we only support "true"
+            # subrefs for word tokens
+            w = cls.get_word_value(piece)
+            wl = len(w)
+            for wk in (w[i : j + 1] for i in range(wl) for j in range(i, wl)):
+                idx[wk] += 1
+            subref_idx = idx[w]
+            subref_value = f"{w}[{subref_idx}]"
+
+            to_create.append(
+                cls(
+                    text_part=text_part_node,
+                    value=piece,
+                    word_value=w,
+                    position=pos + 1,
+                    # @@@ not a true uuid
+                    uuid=f"t{text_part_node.ref}_{pos}",
+                    idx=counters["token_idx"],
+                    subref_value=subref_value,
+                )
+            )
+            counters["token_idx"] += 1
+        return to_create
+
+    def __str__(self):
+        return f"{self.text_part.urn} :: {self.value}"
+
+
+class NamedEntity(models.Model):
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True, null=True)
+    kind = models.CharField(max_length=6, choices=constants.NAMED_ENTITY_KINDS)
+    url = models.URLField(max_length=200)
+
+    idx = models.IntegerField(help_text="0-based index", blank=True, null=True)
+    urn = models.CharField(max_length=255, unique=True)
+
+    # @@@ we may also want structure these references using URNs
+    tokens = models.ManyToManyField("library.Token", related_name="named_entities")
+
+    def __str__(self):
+        return f"{self.urn} :: {self.title }"
