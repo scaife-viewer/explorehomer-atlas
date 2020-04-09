@@ -133,6 +133,7 @@ INSTALLED_APPS = [
     "readhomer_atlas",
     "readhomer_atlas.library",
     "readhomer_atlas.tocs",
+    "readhomer_atlas.web_annotation",
 ]
 
 ADMIN_URL = "admin:index"
@@ -183,3 +184,7 @@ ATLAS_CONFIG = dict(
 )
 
 NODE_ALPHABET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+
+# @@@ review
+DEFAULT_HTTP_CACHE_DURATION = 60 * 60 * 24 * 365  # one year
+DEFAULT_HTTP_PROTOCOL = os.environ.get("DEFAULT_HTTP_PROTOCOL", "http")

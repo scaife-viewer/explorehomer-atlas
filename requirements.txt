@@ -7,4 +7,5 @@ django-treebeard==4.3
 django==2.2.10
 graphene-django==2.6.0
 gunicorn==20.0.0
+requests==2.23.0
 whitenoise==4.1.4
