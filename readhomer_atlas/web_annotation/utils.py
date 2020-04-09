@@ -1,4 +1,5 @@
 from django.db.models import Q
+from django.shortcuts import Http404
 from django.urls import reverse_lazy
 from django.utils.functional import cached_property
 
@@ -89,6 +90,11 @@ class WebAnnotationGenerator:
 
         # @@@ order of these ROIs is really important; do we ensure it?
         roi_qs = ImageROI.objects.filter(text_parts__in=text_parts)
+        if not roi_qs:
+            # @@@ we should handle this further up the chain;
+            # this ensures we don't serve a 500 when we're missing
+            # bounding box data
+            raise Http404
         coordinates = []
         for roi_obj in roi_qs:
             if roi_obj.data["urn:cite2:hmt:va_dse.v1.surface:"] != self.urn:
