@@ -386,11 +386,17 @@ class TextAnnotationNode(DjangoObjectType):
         filter_fields = ["urn"]
 
 
+class TokenFilterSet(django_filters.FilterSet):
+    class Meta:
+        model = Token
+        fields = {"text_part__urn": ["exact", "startswith"]}
+
+
 class TokenNode(DjangoObjectType):
     class Meta:
-        filter_fields = ["text_part__urn"]
         model = Token
         interfaces = (relay.Node,)
+        filterset_class = TokenFilterSet
 
 
 class NamedEntityNode(DjangoObjectType):
