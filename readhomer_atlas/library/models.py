@@ -244,3 +244,6 @@ class NamedEntity(models.Model):
 
     # @@@ we may also want structure these references using URNs
     tokens = models.ManyToManyField("library.Token", related_name="named_entities")
+
+    def __str__(self):
+        return f"{self.urn} :: {self.title }"
