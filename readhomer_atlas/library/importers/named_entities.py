@@ -1,15 +1,28 @@
 import csv
+import os
+
+from django.conf import settings
 
 from ..models import NamedEntity, Node
 
 
-def apply_named_entities(reset=False):
-    if reset:
-        NamedEntity.objects.all().delete()
+NAMED_ENTITIES_DATA_PATH = os.path.join(
+    settings.PROJECT_ROOT, "data", "annotations", "named-entities"
+)
+ENTITIES_DIR = os.path.join(NAMED_ENTITIES_DATA_PATH, "processed", "entities")
+STANDOFF_DIR = os.path.join(NAMED_ENTITIES_DATA_PATH, "processed", "standoff")
 
-    named_entites_path = "data/annotations/named-entities/raw/named_entities.csv"
-    lookup = {}
-    with open(named_entites_path) as f:
+
+def get_entity_paths():
+    return [
+        os.path.join(ENTITIES_DIR, f)
+        for f in os.listdir(ENTITIES_DIR)
+        if f.endswith(".csv")
+    ]
+
+
+def _populate_lookup(path, lookup):
+    with open(path) as f:
         reader = csv.DictReader(f)
         for row in reader:
             named_entity, _ = NamedEntity.objects.get_or_create(
@@ -22,8 +35,17 @@ def apply_named_entities(reset=False):
             )
             lookup[named_entity.urn] = named_entity
 
-    iliad_path = "data/annotations/named-entities/raw/tlg0012.tlg001.perseus-grc2.csv"
-    with open(iliad_path) as f:
+
+def get_standoff_paths():
+    return [
+        os.path.join(STANDOFF_DIR, f)
+        for f in os.listdir(STANDOFF_DIR)
+        if f.endswith(".csv")
+    ]
+
+
+def _apply_entities(path, lookup):
+    with open(path) as f:
         reader = csv.DictReader(f)
         for row in reader:
             named_entity = lookup[row["named_entity_urn"]]
@@ -31,3 +53,15 @@ def apply_named_entities(reset=False):
             position = int(row["token_position"])
             tokens = text_part.tokens.filter(position__in=[position])
             named_entity.tokens.add(*tokens)
+
+
+def apply_named_entities(reset=False):
+    if reset:
+        NamedEntity.objects.all().delete()
+
+    lookup = {}
+    for path in get_entity_paths():
+        _populate_lookup(path, lookup)
+
+    for path in get_standoff_paths():
+        _apply_entities(path, lookup)
