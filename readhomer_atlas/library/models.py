@@ -95,7 +95,7 @@ class TextAnnotation(models.Model):
 
         if delta_urns:
             print(
-                f'Could not resolve all references, probably to bad data in the CEX file [urn="{self.urn}" unresolved_urns="{",".join(delta_urns)}"]'
+                f'Could not resolve all references, probably due to bad data in the CEX file [urn="{self.urn}" unresolved_urns="{",".join(delta_urns)}"]'
             )
         self.text_parts.set(reference_objs)
 
