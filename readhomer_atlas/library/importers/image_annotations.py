@@ -3,7 +3,12 @@ import os
 
 from django.conf import settings
 
-from ..models import IMAGE_ANNOTATION_KIND_CANVAS, ImageAnnotation, ImageROI, Node
+from ..models import (
+    IMAGE_ANNOTATION_KIND_CANVAS,
+    ImageAnnotation,
+    ImageROI,
+    Node,
+)
 
 
 ANNOTATIONS_DATA_PATH = os.path.join(

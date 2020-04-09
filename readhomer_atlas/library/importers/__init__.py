@@ -1,4 +1,10 @@
-from . import alignments, image_annotations, named_entities, text_annotations, versions
+from . import (
+    alignments,
+    image_annotations,
+    named_entities,
+    text_annotations,
+    versions,
+)
 
 
 __all__ = [
