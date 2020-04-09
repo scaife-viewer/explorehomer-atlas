@@ -6,15 +6,15 @@ from django.conf import settings
 from ..models import TEXT_ANNOTATION_KIND_SCHOLIA, TextAnnotation
 
 
-ALIGNMENTS_DATA_PATH = os.path.join(
+ANNOTATIONS_DATA_PATH = os.path.join(
     settings.PROJECT_ROOT, "data", "annotations", "text-annotations"
 )
 
 
 def get_paths():
     return [
-        os.path.join(ALIGNMENTS_DATA_PATH, f)
-        for f in os.listdir(ALIGNMENTS_DATA_PATH)
+        os.path.join(ANNOTATIONS_DATA_PATH, f)
+        for f in os.listdir(ANNOTATIONS_DATA_PATH)
         if f.endswith(".json")
     ]
 
