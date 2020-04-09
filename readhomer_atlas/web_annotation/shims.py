@@ -1,10 +1,15 @@
 import os
 
+from django.db.models import Q
 from django.utils.functional import cached_property
 
 import requests
 
-from ..library.models import Node
+from ..library.models import Node, TextAlignmentChunk
+from ..library.utils import (
+    extract_version_urn_and_ref,
+    get_textparts_from_passage_reference,
+)
 from .utils import preferred_folio_urn
 
 
@@ -41,7 +46,7 @@ class AlignmentsShim:
             return first
         return f"{first}-{last}"
 
-    def get_alignment_data(self, idx=None, fields=None):
+    def get_alignment_data_graphql(self, idx=None, fields=None):
         if fields is None:
             fields = ["idx", "items", "citation"]
         ref = self.get_ref()
@@ -71,3 +76,29 @@ class AlignmentsShim:
         for edge in resp.json()["data"]["textAlignmentChunks"]["edges"]:
             data.append(edge["node"])
         return data
+
+    def get_alignment_data_from_db(self, idx=None, fields=None):
+        if fields is None:
+            fields = ["idx", "items", "citation"]
+
+        ref = self.get_ref()
+        version_urn = "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:"
+        passage_reference = f"{version_urn}{ref}"
+
+        # @@@ add as a Node manager method
+        version_urn, ref = extract_version_urn_and_ref(passage_reference)
+        try:
+            version = Node.objects.get(urn=version_urn)
+        except Node.DoesNotExist:
+            raise Exception(f"{version_urn} was not found.")
+
+        textparts_queryset = get_textparts_from_passage_reference(
+            passage_reference, version
+        )
+        alignments = TextAlignmentChunk.objects.filter(
+            Q(start__in=textparts_queryset) | Q(end__in=textparts_queryset)
+        ).values(*fields)
+        return list(alignments)
+
+    def get_alignment_data(self, **kwargs):
+        return self.get_alignment_data_from_db(**kwargs)
