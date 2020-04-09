@@ -1,9 +1,5 @@
-import os
-
 from django.db.models import Q
 from django.utils.functional import cached_property
-
-import requests
 
 from ..library.models import Node, TextAlignmentChunk
 from ..library.utils import (
@@ -15,15 +11,10 @@ from .utils import preferred_folio_urn
 
 class AlignmentsShim:
     """
-    Shim to allow us to retrieve alignment data from explorehomer;
+    Shim to allow us to retrieve alignment data indirectly from the database
     eventually, we'll likely want to write out bonding box info as standoff annotation
     and ship to explorehomer directly.
     """
-
-    GRAPHQL_ENDPOINT = os.environ.get(
-        "ATLAS_GRAPHQL_ENDPOINT",
-        "https://explorehomer-atlas-dev.herokuapp.com/graphql/",
-    )
 
     def __init__(self, folio_urn):
         self.folio_urn = preferred_folio_urn(folio_urn)
@@ -46,38 +37,7 @@ class AlignmentsShim:
             return first
         return f"{first}-{last}"
 
-    def get_alignment_data_graphql(self, idx=None, fields=None):
-        if fields is None:
-            fields = ["idx", "items", "citation"]
-        ref = self.get_ref()
-        # @@@ hardcoded version urn
-        # @@@ add the ability to get a count from an edge
-        reference = f"urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:{ref}"
-        predicate = f'reference:"{reference}"'
-        if idx:
-            predicate = f"{predicate} idx: {idx}"
-        resp = requests.post(
-            self.GRAPHQL_ENDPOINT,
-            json={
-                "query": """
-                {
-                    textAlignmentChunks(%s) {
-                        edges {
-                            node {
-                                %s
-                            }
-                        }
-                    }
-                }"""
-                % (predicate, "\n".join(fields))
-            },
-        )
-        data = []
-        for edge in resp.json()["data"]["textAlignmentChunks"]["edges"]:
-            data.append(edge["node"])
-        return data
-
-    def get_alignment_data_from_db(self, idx=None, fields=None):
+    def get_alignment_data(self, idx=None, fields=None):
         if fields is None:
             fields = ["idx", "items", "citation"]
 
@@ -99,6 +59,3 @@ class AlignmentsShim:
             Q(start__in=textparts_queryset) | Q(end__in=textparts_queryset)
         ).values(*fields)
         return list(alignments)
-
-    def get_alignment_data(self, **kwargs):
-        return self.get_alignment_data_from_db(**kwargs)
