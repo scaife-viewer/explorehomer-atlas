@@ -9,17 +9,17 @@ from .views import (
 
 urlpatterns = [
     path(
-        "<urn>/translation-alignment/collection/<format>/",
+        "<urn>/<slug:annotation_kind>/collection/<format>/",
         serve_web_annotation_collection,
         name="serve_web_annotation_collection",
     ),
     path(
-        "<urn>/translation-alignment/collection/<format>/<int:zero_page_number>/",
+        "<urn>/<slug:annotation_kind>/collection/<format>/<int:zero_page_number>/",
         serve_web_annotation_page,
         name="serve_web_annotation_page",
     ),
     path(
-        "<urn>/translation-alignment/<int:idx>/<format>/",
+        "<urn>/<slug:annotation_kind>/<int:idx>/<format>/",
         serve_wa,
         name="serve_web_annotation",
     ),
