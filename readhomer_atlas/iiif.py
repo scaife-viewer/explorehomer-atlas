@@ -6,7 +6,7 @@ class IIIFResolver:
     BASE_URL = "https://image.library.jhu.edu/iiif/"
     # @@@ figure out what this actually is in IIIF spec terms
     CANVAS_BASE_URL = "https://rosetest.library.jhu.edu/rosademo/iiif3/"
-    COLLETION_SUBDIR = "homer/VA"
+    COLLECTION_SUBDIR = "homer/VA"
     iruri_kwargs = {
         "region": "full",
         "size": "full",
@@ -27,8 +27,12 @@ class IIIFResolver:
         return image_part.replace("_", "-")
 
     @property
+    def collection_manifest_url(self):
+        return urljoin(self.CANVAS_BASE_URL, self.COLLECTION_SUBDIR, "manifest")
+
+    @property
     def iiif_image_id(self):
-        path = urljoin(self.COLLETION_SUBDIR, self.munged_image_path)
+        path = urljoin(self.COLLECTION_SUBDIR, self.munged_image_path)
         return quote_plus(path)
 
     @property
