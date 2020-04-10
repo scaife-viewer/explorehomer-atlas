@@ -191,6 +191,79 @@ class TranslationAlignmentGenerator:
         return self.get_object_for_body_format("html")
 
 
+class NamedEntitiesGenerator:
+    slug = "named-entities"
+
+    def __init__(self, folio_urn, named_entity):
+        self.urn = folio_urn
+        self.named_entity = named_entity
+        # @@@
+        self.idx = named_entity["idx"]
+
+    # @@@ factor this out
+    @cached_property
+    def folio_image_urn(self):
+        folio = Node.objects.get(urn=preferred_folio_urn(self.urn))
+        return folio.image_annotations.first().urn
+
+    def get_absolute_url(self, body_format):
+        url = reverse_lazy(
+            "serve_web_annotation",
+            kwargs={
+                "urn": self.urn,
+                "annotation_kind": self.slug,
+                "idx": self.idx,
+                "format": body_format,
+            },
+        )
+        return build_absolute_url(url)
+
+    @property
+    def compound_obj(self):
+        image_urn = self.folio_image_urn
+        iiif_obj = IIIFResolver(image_urn)
+        work_label = "Venetus A"
+        return {
+            "id": self.get_absolute_url("compound"),
+            "@context": [
+                "http://www.w3.org/ns/anno.jsonld",
+                # @@@ do we need this?
+                {
+                    "prezi": "http://iiif.io/api/presentation/2#",
+                    "Canvas": "prezi:Canvas",
+                    "Manifest": "prezi:Manifest",
+                },
+            ],
+            "type": "Annotation",
+            "label": f'Named Entity data for {work_label} {iiif_obj.munged_image_path} text "{self.named_entity["token"].word_value}"',
+            "creator": "https://scaife-viewer.org/",
+            "body": [
+                {
+                    "purpose": "commenting",
+                    "type": "TextualBody",
+                    "value": f'{self.named_entity["named_entity_obj"].title}',
+                    "format": "text/plain",
+                },
+                {
+                    "purpose": "identifying",
+                    "source": f'{self.named_entity["named_entity_obj"].url}',
+                    "format": "text/html",
+                },
+            ],
+            "target": [
+                {
+                    "type": "SpecificResource",
+                    "partOf": [
+                        {"id": iiif_obj.collection_manifest_url, "type": "Manifest"}
+                    ],
+                    "source": {"id": f"{iiif_obj.canvas_url}", "type": "Canvas"},
+                },
+                # @@@ URI / ASCII requirements and our subpaths
+                f'{self.named_entity["token"].text_part.urn}@{self.named_entity["token"].subref_value}',
+            ],
+        }
+
+
 class WebAnnotationCollectionGenerator:
     def __init__(self, generator_class, urn, objects, format):
         self.generator_class = generator_class
@@ -213,8 +286,13 @@ class WebAnnotationCollectionGenerator:
                 self.append_to_item_list(wa.html_obj)
             elif self.format == "text":
                 self.append_to_item_list(wa.text_obj)
+            elif self.format == "compound":
+                self.append_to_item_list(wa.compound_obj)
         return self.item_list
 
 
 def get_generator_for_kind(annotation_kind):
-    return {"translation-alignment": TranslationAlignmentGenerator}[annotation_kind]
+    return {
+        "translation-alignment": TranslationAlignmentGenerator,
+        "named-entities": NamedEntitiesGenerator,
+    }[annotation_kind]

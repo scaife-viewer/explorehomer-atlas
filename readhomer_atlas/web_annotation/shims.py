@@ -1,7 +1,7 @@
 from django.db.models import Q
 from django.utils.functional import cached_property
 
-from ..library.models import Node, TextAlignmentChunk
+from ..library.models import Node, TextAlignmentChunk, Token
 from ..library.utils import (
     extract_version_urn_and_ref,
     get_textparts_from_passage_reference,
@@ -9,13 +9,7 @@ from ..library.utils import (
 from .utils import preferred_folio_urn
 
 
-class AlignmentsShim:
-    """
-    Shim to allow us to retrieve alignment data indirectly from the database
-    eventually, we'll likely want to write out bonding box info as standoff annotation
-    and ship to explorehomer directly.
-    """
-
+class FolioShimBase:
     def __init__(self, folio_urn):
         self.folio_urn = preferred_folio_urn(folio_urn)
 
@@ -37,10 +31,7 @@ class AlignmentsShim:
             return first
         return f"{first}-{last}"
 
-    def get_alignment_data(self, idx=None, fields=None):
-        if fields is None:
-            fields = ["idx", "items", "citation"]
-
+    def get_textparts_queryset(self):
         ref = self.get_ref()
         version_urn = "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:"
         passage_reference = f"{version_urn}{ref}"
@@ -52,10 +43,41 @@ class AlignmentsShim:
         except Node.DoesNotExist:
             raise Exception(f"{version_urn} was not found.")
 
-        textparts_queryset = get_textparts_from_passage_reference(
-            passage_reference, version
-        )
+        return get_textparts_from_passage_reference(passage_reference, version)
+
+
+class AlignmentsShim(FolioShimBase):
+    """
+    Shim to allow us to retrieve alignment data indirectly from the database
+    eventually, we'll likely want to write out bonding box info as standoff annotation
+    and ship to explorehomer directly.
+    """
+
+    def get_object_list(self, idx=None, fields=None):
+        if fields is None:
+            fields = ["idx", "items", "citation"]
+        textparts_queryset = self.get_textparts_queryset()
         alignments = TextAlignmentChunk.objects.filter(
             Q(start__in=textparts_queryset) | Q(end__in=textparts_queryset)
         ).values(*fields)
         return list(alignments)
+
+
+class NamedEntitiesShim(FolioShimBase):
+    def get_object_list(self, idx=None, fields=None):
+        textparts_queryset = self.get_textparts_queryset()
+
+        named_entities = []
+        # @@@ fake idx
+        idx = 0
+        tokens = Token.objects.filter(
+            text_part__in=textparts_queryset
+        ).prefetch_related("named_entities")
+        for token in tokens:
+            for named_entity in token.named_entities.all():
+                print(idx)
+                named_entities.append(
+                    {"token": token, "named_entity_obj": named_entity, "idx": idx}
+                )
+                idx += 1
+        return named_entities
