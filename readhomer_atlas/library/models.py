@@ -149,6 +149,21 @@ class AudioAnnotation(models.Model):
 
     urn = models.CharField(max_length=255, blank=True, null=True)
 
+    def resolve_references(self):
+        if "references" not in self.data:
+            print(f'No references found [urn="{self.urn}"]')
+            return
+        desired_urns = set(self.data["references"])
+        reference_objs = list(Node.objects.filter(urn__in=desired_urns))
+        resolved_urns = set([r.urn for r in reference_objs])
+        delta_urns = desired_urns.symmetric_difference(resolved_urns)
+
+        if delta_urns:
+            print(
+                f'Could not resolve all references, probably due to bad data in the CEX file [urn="{self.urn}" unresolved_urns="{",".join(delta_urns)}"]'
+            )
+        self.text_parts.set(reference_objs)
+
 
 class Node(MP_Node):
     # @@@ used to pivot siblings; may be possible if we hook into path field

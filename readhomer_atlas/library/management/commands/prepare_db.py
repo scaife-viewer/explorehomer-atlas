@@ -33,6 +33,9 @@ class Command(BaseCommand):
         self.stdout.write("--[Loading image annotations]--")
         importers.image_annotations.import_image_annotations(reset=True)
 
+        self.stdout.write("--[Loading audio annotations]--")
+        importers.audio_annotations.import_audio_annotations(reset=True)
+
         self.stdout.write("--[Tokenizing versions/exemplars]--")
         tokenizers.tokenize_all_text_parts(reset=True)
 
