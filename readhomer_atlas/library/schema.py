@@ -9,6 +9,7 @@ from graphene_django.utils import camelize
 
 # from .models import Node as TextPart
 from .models import (
+    AudioAnnotation,
     ImageAnnotation,
     NamedEntity,
     Node,
@@ -352,6 +353,15 @@ class ImageAnnotationNode(DjangoObjectType):
         filter_fields = ["urn"]
 
 
+class AudioAnnotationNode(DjangoObjectType):
+    data = generic.GenericScalar()
+
+    class Meta:
+        model = AudioAnnotation
+        interfaces = (relay.Node,)
+        filter_fields = ["urn"]
+
+
 class TokenFilterSet(django_filters.FilterSet):
     class Meta:
         model = Token
@@ -391,6 +401,9 @@ class Query(ObjectType):
 
     image_annotation = relay.Node.Field(ImageAnnotationNode)
     image_annotations = LimitedConnectionField(ImageAnnotationNode)
+
+    audio_annotation = relay.Node.Field(AudioAnnotationNode)
+    audio_annotations = LimitedConnectionField(AudioAnnotationNode)
 
     tree = Field(TreeNode, urn=String(required=True), up_to=String(required=False))
 

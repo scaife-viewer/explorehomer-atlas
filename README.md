@@ -309,6 +309,52 @@ Retrieve text annotations for a given passage
 }
 ```
 
+## Audio Annotations
+
+### Sample Queries
+
+Retrieve audio annotations
+```
+{
+  audioAnnotations(first: 10) {
+    edges {
+      node {
+        urn
+        assetUrl
+        textParts {
+          edges {
+            node {
+              urn
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+```
+Retrieve audio annotations for a given passage
+```
+{
+  passageTextParts(reference: "urn:cts:greekLit:tlg0012.tlg001.msA:1.1") {
+    edges {
+      node {
+        urn
+        audioAnnotations {
+          edges {
+            node {
+              assetUrl
+            }
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+
 ## Image Annotations
 
 ### Sample Queries
