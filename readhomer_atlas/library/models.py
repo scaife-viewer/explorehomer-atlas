@@ -140,6 +140,16 @@ class ImageROI(models.Model):
     )
 
 
+class AudioAnnotation(models.Model):
+    data = JSONField(default=dict, blank=True)
+    asset_url = models.URLField(max_length=200)
+    idx = models.IntegerField(help_text="0-based index")
+
+    text_parts = SortedManyToManyField("library.Node", related_name="audio_annotations")
+
+    urn = models.CharField(max_length=255, blank=True, null=True)
+
+
 class Node(MP_Node):
     # @@@ used to pivot siblings; may be possible if we hook into path field
     idx = models.IntegerField(help_text="0-based index", blank=True, null=True)
