@@ -62,7 +62,7 @@ def serve_web_annotation_collection(request, annotation_kind, urn, format):
         object_list = AlignmentsShim(urn).get_object_list(fields=["idx"])
         label = f"Translation Alignments for {urn}"
     elif annotation_kind == "named-entities":
-        object_list = NamedEntitiesShim(urn).get_object_list()
+        object_list = NamedEntitiesShim(urn).get_object_list(fields=["idx"])
         label = f"Named Entities for {urn}"
     paginator = Paginator(object_list, per_page=PAGE_SIZE)
 
@@ -102,7 +102,7 @@ def serve_web_annotation_page(request, annotation_kind, urn, format, zero_page_n
 
     if annotation_kind == "translation-alignment":
         # @@@ query alignments from Postgres
-        object_list = AlignmentsShim(urn).get_object_list(fields=["idx"])
+        object_list = AlignmentsShim(urn).get_object_list()
     elif annotation_kind == "named-entities":
         object_list = NamedEntitiesShim(urn).get_object_list()
 
