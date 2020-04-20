@@ -285,6 +285,53 @@ class NamedEntitiesGenerator(FolioImageAnnotationMixin):
         }
 
 
+class AudioAnnotationsGenerator(FolioBoundingBoxAnnotationMixin):
+    slug = "audio-annotations"
+
+    def __init__(self, folio_urn, audio_annotation):
+        self.urn = folio_urn
+        self.audio_annotation = audio_annotation["obj"]
+        # @@@
+        self.idx = audio_annotation["idx"]
+
+    @cached_property
+    def annotation_references(self):
+        return list(self.audio_annotation.text_parts.values_list("urn", flat=True))
+
+    def get_references_for_bounding_box(self):
+        return self.annotation_references
+
+    @property
+    def body(self):
+        return {
+            "id": self.audio_annotation.asset_url,
+            # @@@ retrieve this from individual annotations
+            "rights": "https://creativecommons.org/licenses/by/4.0/",
+            "creator": {
+                "id": "http://hypotactic.com/",
+                "name": "David Chamberlain",
+                "type": "Person",
+            },
+            "format": "audio/mp4",
+            "language": "grc",
+        }
+
+    @property
+    def compound_obj(self):
+        return {
+            "id": self.get_absolute_url("compound"),
+            "@context": "http://www.w3.org/ns/anno.jsonld",
+            "type": "Annotation",
+            "target": [
+                self.annotation_references[0],
+                self.canvas_target_obj,
+                self.image_target_obj,
+                self.image_request_url,
+            ],
+            "body": self.body,
+        }
+
+
 class WebAnnotationCollectionGenerator:
     def __init__(self, generator_class, urn, objects, format):
         self.generator_class = generator_class
@@ -316,4 +363,5 @@ def get_generator_for_kind(annotation_kind):
     return {
         "translation-alignment": TranslationAlignmentGenerator,
         "named-entities": NamedEntitiesGenerator,
+        "audio-annotations": AudioAnnotationsGenerator,
     }[annotation_kind]

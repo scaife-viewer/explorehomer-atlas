@@ -10,7 +10,7 @@ from .generators import (
     WebAnnotationCollectionGenerator,
     get_generator_for_kind,
 )
-from .shims import AlignmentsShim, NamedEntitiesShim
+from .shims import AlignmentsShim, AudioAnnotationsShim, NamedEntitiesShim
 from .shortcuts import build_absolute_url
 from .utils import as_zero_based, preferred_folio_urn
 
@@ -30,6 +30,8 @@ def serve_wa(request, annotation_kind, urn, idx, format):
         object_list = AlignmentsShim(urn).get_object_list()
     elif annotation_kind == "named-entities":
         object_list = NamedEntitiesShim(urn).get_object_list()
+    elif annotation_kind == "audio-annotations":
+        object_list = AudioAnnotationsShim(urn).get_object_list()
 
     for obj_ in object_list:
         if obj_["idx"] == idx:
@@ -64,6 +66,9 @@ def serve_web_annotation_collection(request, annotation_kind, urn, format):
     elif annotation_kind == "named-entities":
         object_list = NamedEntitiesShim(urn).get_object_list(fields=["idx"])
         label = f"Named Entities for {urn}"
+    elif annotation_kind == "audio-annotations":
+        object_list = AudioAnnotationsShim(urn).get_object_list(fields=["idx"])
+        label = f"Audio Annotations for {urn}"
     paginator = Paginator(object_list, per_page=PAGE_SIZE)
 
     urls = {
@@ -105,6 +110,8 @@ def serve_web_annotation_page(request, annotation_kind, urn, format, zero_page_n
         object_list = AlignmentsShim(urn).get_object_list()
     elif annotation_kind == "named-entities":
         object_list = NamedEntitiesShim(urn).get_object_list()
+    elif annotation_kind == "audio-annotations":
+        object_list = AudioAnnotationsShim(urn).get_object_list()
 
     page_number = zero_page_number + 1
     paginator = Paginator(object_list, per_page=PAGE_SIZE)
