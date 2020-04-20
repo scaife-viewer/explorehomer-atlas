@@ -1,7 +1,7 @@
 from django.db.models import Q
 from django.utils.functional import cached_property
 
-from ..library.models import Node, TextAlignmentChunk, Token
+from ..library.models import AudioAnnotation, Node, TextAlignmentChunk, Token
 from ..library.utils import (
     extract_version_urn_and_ref,
     get_textparts_from_passage_reference,
@@ -10,6 +10,8 @@ from .utils import preferred_folio_urn
 
 
 class FolioShimBase:
+    version_urn = "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:"
+
     def __init__(self, folio_urn):
         self.folio_urn = preferred_folio_urn(folio_urn)
 
@@ -33,8 +35,7 @@ class FolioShimBase:
 
     def get_textparts_queryset(self):
         ref = self.get_ref()
-        version_urn = "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:"
-        passage_reference = f"{version_urn}{ref}"
+        passage_reference = f"{self.version_urn}{ref}"
 
         # @@@ add as a Node manager method
         version_urn, ref = extract_version_urn_and_ref(passage_reference)
@@ -81,3 +82,16 @@ class NamedEntitiesShim(FolioShimBase):
                 )
                 idx += 1
         return named_entities
+
+
+class AudioAnnotationsShim(FolioShimBase):
+    version_urn = "urn:cts:greekLit:tlg0012.tlg001.msA:"
+
+    def get_object_list(self, idx=None, fields=None):
+        textparts_queryset = self.get_textparts_queryset()
+        return [
+            {"idx": pos, "obj": obj}
+            for pos, obj in enumerate(
+                AudioAnnotation.objects.filter(text_parts__in=textparts_queryset)
+            )
+        ]
