@@ -1,3 +1,4 @@
+import io
 import json
 import re
 from collections import defaultdict
@@ -5,6 +6,7 @@ from collections import defaultdict
 from django.conf import settings
 from django.core import serializers
 from django.db import models
+from django.utils.html import strip_spaces_between_tags
 
 # @@@ https://code.djangoproject.com/ticket/12990
 from django_extensions.db.fields.json import JSONField
@@ -122,6 +124,57 @@ class MetricalAnnotation(models.Model):
         """
         return self.data["foot_code"]
 
+    @property
+    def line_num(self):
+        return self.data["line_num"]
+
+    @property
+    def foot_code(self):
+        return self.data["foot_code"]
+
+    @property
+    def line_data(self):
+        return self.data["line_data"]
+
+    def generate_html(self):
+        buffer = io.StringIO()
+        print(
+            f'        <li class="line {self.foot_code}" id="line-{self.line_num}" data-meter="{self.foot_code}">',
+            file=buffer,
+        )
+        print(f"          <div>", end="", file=buffer)
+        index = 0
+        for foot in self.foot_code:
+            if foot == "a":
+                syllables = self.line_data[index : index + 3]
+                index += 3
+            else:
+                syllables = self.line_data[index : index + 2]
+                index += 2
+            if syllables[0]["word_pos"] in [None, "r"]:
+                print("\n            ", end="", file=buffer)
+            print(f'<span class="foot">', end="", file=buffer)
+            for i, syllable in enumerate(syllables):
+                if i > 0 and syllable["word_pos"] in [None, "r"]:
+                    print("\n            ", end="", file=buffer)
+                syll_classes = ["syll"]
+                if syllable["length"] == "long":
+                    syll_classes.append("long")
+                if syllable["caesura"]:
+                    syll_classes.append("caesura")
+                if syllable["word_pos"] is not None:
+                    syll_classes.append(syllable["word_pos"])
+                syll_class_string = " ".join(syll_classes)
+                print(
+                    f'<span class="{syll_class_string}">{syllable["text"]}</span>',
+                    end="",
+                    file=buffer,
+                )
+            print(f"</span>", end="", file=buffer)
+        print(f"\n          </div>", file=buffer)
+        print(f"        </li>", file=buffer)
+        buffer.seek(0)
+        return strip_spaces_between_tags(buffer.read()).strip()
 
 IMAGE_ANNOTATION_KIND_CANVAS = "canvas"
 IMAGE_ANNOTATION_KIND_CHOICES = ((IMAGE_ANNOTATION_KIND_CANVAS, "Canvas"),)
