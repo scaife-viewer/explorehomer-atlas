@@ -30,6 +30,9 @@ class Command(BaseCommand):
         self.stdout.write("--[Loading text annotations]--")
         importers.text_annotations.import_text_annotations(reset=True)
 
+        self.stdout.write("--[Loading metrical annotations]--")
+        importers.metrical_annotations.import_metrical_annotations(reset=True)
+
         self.stdout.write("--[Loading image annotations]--")
         importers.image_annotations.import_image_annotations(reset=True)
 
