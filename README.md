@@ -221,6 +221,18 @@ level of `Version` nodes, maintaining the tree structure in the final payload.
 
 ## Annotations
 
+The annotations below are invoked by the `prepare_db` script.
+
+While developing new annotations or ingesting data in alternate formats,
+it can be helpful to run the annotation importer script in isolation
+from `prepare_db`:
+
+```python
+from readhomer_atlas import importers
+
+importers.text_annotations.import_text_annotations(reset=True)
+```
+
 ### Text Alignments
 
 #### Sample Queries
