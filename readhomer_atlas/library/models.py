@@ -100,6 +100,29 @@ class TextAnnotation(models.Model):
         self.text_parts.set(reference_objs)
 
 
+class MetricalAnnotation(models.Model):
+    # @@@ in the future, we may ingest any attributes into
+    # `data` and query via JSON
+    data = JSONField(default=dict, blank=True)
+
+    html_content = models.TextField()
+    short_form = models.TextField()
+
+    idx = models.IntegerField(help_text="0-based index")
+    text_parts = SortedManyToManyField(
+        "library.Node", related_name="metrical_annotations"
+    )
+
+    urn = models.CharField(max_length=255, blank=True, null=True)
+
+    @property
+    def metrical_pattern(self):
+        """
+        alias of foot_code; could be denormed if we need to query
+        """
+        return self.data["foot_code"]
+
+
 IMAGE_ANNOTATION_KIND_CANVAS = "canvas"
 IMAGE_ANNOTATION_KIND_CHOICES = ((IMAGE_ANNOTATION_KIND_CANVAS, "Canvas"),)
 
