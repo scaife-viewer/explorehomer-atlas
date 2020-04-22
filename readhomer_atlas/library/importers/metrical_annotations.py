@@ -1,4 +1,19 @@
 import csv
+import os
+
+from django.conf import settings
+
+from ..models import MetricalAnnotation
+
+
+# @@@ do we need COPYRIGHT_FRAGMENT like we have for the audio?
+
+
+ANNOTATIONS_DATA_PATH = os.path.join(
+    settings.PROJECT_ROOT, "data", "annotations", "metrical-annotations"
+)
+
+CITE_IDENTIFIER = "urn:cite2:exploreHomer:metrical_annotation.v1:"
 
 
 def pad_list(lst, n):
@@ -127,3 +142,30 @@ class MetricalAnnotationProcessor:
             else:
                 foot_code += "a"
             yield (line, foot_code, line_data)
+
+
+def import_metrical_annotations(reset=False):
+    if reset:
+        MetricalAnnotation.objects.all().delete()
+    version_urn = "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:"
+    raw_path = os.path.join(ANNOTATIONS_DATA_PATH, "raw", "iliad1.csv")
+    processor = MetricalAnnotationProcessor()
+
+    header = ["line_num", "foot_code", "line_data"]
+    to_create = []
+    idx = 0
+    for line in processor.lines(raw_path):
+        data = {}
+        data.update(zip(header, line))
+        data["references"] = [f'{version_urn}1.{data["line_num"]}']
+        urn = f"{CITE_IDENTIFIER}{idx + 1}"
+        ma = MetricalAnnotation(data=data, idx=idx, urn=urn)
+        ma.html_content = ma.generate_html()
+        to_create.append(ma)
+        idx += 1
+
+    created = len(MetricalAnnotation.objects.bulk_create(to_create, batch_size=500))
+    print(f"Created metrical annotations [count={created}]")
+
+    for metrical_annotation in MetricalAnnotation.objects.all():
+        metrical_annotation.resolve_references()

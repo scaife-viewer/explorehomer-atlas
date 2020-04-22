@@ -182,6 +182,21 @@ class MetricalAnnotation(models.Model):
         """
         pass
 
+    def resolve_references(self):
+        if "references" not in self.data:
+            print(f'No references found [urn="{self.urn}"]')
+            return
+        desired_urns = set(self.data["references"])
+        reference_objs = list(Node.objects.filter(urn__in=desired_urns))
+        resolved_urns = set([r.urn for r in reference_objs])
+        delta_urns = desired_urns.symmetric_difference(resolved_urns)
+
+        if delta_urns:
+            print(
+                f'Could not resolve all references [urn="{self.urn}" unresolved_urns="{",".join(delta_urns)}"]'
+            )
+        self.text_parts.set(reference_objs)
+
 
 IMAGE_ANNOTATION_KIND_CANVAS = "canvas"
 IMAGE_ANNOTATION_KIND_CHOICES = ((IMAGE_ANNOTATION_KIND_CANVAS, "Canvas"),)
