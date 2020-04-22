@@ -176,6 +176,13 @@ class MetricalAnnotation(models.Model):
         buffer.seek(0)
         return strip_spaces_between_tags(buffer.read()).strip()
 
+    def generate_compact_form(self):
+        """
+        |μῆ:νιν :ἄ|ει:δε :θε|ὰ /Πη|λη:ϊ:ά|δεω :Ἀ:χι|λῆ:ος
+        """
+        pass
+
+
 IMAGE_ANNOTATION_KIND_CANVAS = "canvas"
 IMAGE_ANNOTATION_KIND_CHOICES = ((IMAGE_ANNOTATION_KIND_CANVAS, "Canvas"),)
 
