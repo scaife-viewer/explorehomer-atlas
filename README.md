@@ -354,6 +354,50 @@ Retrieve audio annotations for a given passage
 }
 ```
 
+## Metrical Annotations
+
+### Sample Queries
+
+Retrieve metrical annotations
+```
+{
+  metricalAnnotations(first: 10) {
+    edges {
+      node {
+        urn
+        metricalPattern
+        textParts {
+          edges {
+            node {
+              urn
+            }
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+Retrieve metrical annotations for a given passage
+```
+{
+  passageTextParts(reference: "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1.1-1.2") {
+    edges {
+      node {
+        urn
+        metricalAnnotations {
+          edges {
+            node {
+              metricalPattern
+            }
+          }
+        }
+      }
+    }
+  }
+}
+```
 
 ## Image Annotations
 
