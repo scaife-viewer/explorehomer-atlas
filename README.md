@@ -219,9 +219,11 @@ level of `Version` nodes, maintaining the tree structure in the final payload.
 }
 ```
 
-## Text Alignments
+## Annotations
 
-### Sample Queries
+### Text Alignments
+
+#### Sample Queries
 
 Get text alignment chunks for a given reference:
 ```
@@ -262,9 +264,9 @@ Get a version annotated with text alignment chunks:
 }
 ```
 
-## Text Annotations
+### Text Annotations
 
-### Sample Queries
+#### Sample Queries
 
 Retrieve text annotations
 ```
@@ -309,9 +311,9 @@ Retrieve text annotations for a given passage
 }
 ```
 
-## Audio Annotations
+### Audio Annotations
 
-### Sample Queries
+#### Sample Queries
 
 Retrieve audio annotations
 ```
@@ -354,9 +356,9 @@ Retrieve audio annotations for a given passage
 }
 ```
 
-## Metrical Annotations
+### Metrical Annotations
 
-### Sample Queries
+#### Sample Queries
 
 Retrieve metrical annotations
 ```
@@ -399,9 +401,9 @@ Retrieve metrical annotations for a given passage
 }
 ```
 
-## Image Annotations
+### Image Annotations
 
-### Sample Queries
+#### Sample Queries
 Retrieve image annotation applied to folios
 ```
 {
@@ -446,9 +448,9 @@ Retrieve text parts annotated with images
 }
 ```
 
-## Named Entities
+### Named Entities
 
-### Sample Queries
+#### Sample Queries
 Retrieve named entities
 ```
 {
