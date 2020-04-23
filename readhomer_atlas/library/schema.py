@@ -7,11 +7,22 @@ from graphene_django import DjangoObjectType
 from graphene_django.filter import DjangoFilterConnectionField
 from graphene_django.utils import camelize
 
-from .models import NamedEntity
-from .models import Node as TextPart
-from .models import TextAlignment, TextAlignmentChunk, TextAnnotation, Token
+# from .models import Node as TextPart
+from .models import (
+    ImageAnnotation,
+    NamedEntity,
+    Node,
+    TextAlignment,
+    TextAlignmentChunk,
+    TextAnnotation,
+    Token,
+)
 from .urn import URN
 from .utils import get_chunker
+
+
+# @@@ alias Node because relay.Node is quite different
+TextPart = Node
 
 
 def extract_version_urn_and_ref(value):
@@ -386,6 +397,16 @@ class TextAnnotationNode(DjangoObjectType):
         filter_fields = ["urn"]
 
 
+class ImageAnnotationNode(DjangoObjectType):
+    text_parts = LimitedConnectionField(lambda: TextPartNode)
+    data = generic.GenericScalar()
+
+    class Meta:
+        model = ImageAnnotation
+        interfaces = (relay.Node,)
+        filter_fields = ["urn"]
+
+
 class TokenFilterSet(django_filters.FilterSet):
     class Meta:
         model = Token
@@ -422,6 +443,9 @@ class Query(ObjectType):
 
     text_annotation = relay.Node.Field(TextAnnotationNode)
     text_annotations = LimitedConnectionField(TextAnnotationNode)
+
+    image_annotation = relay.Node.Field(ImageAnnotationNode)
+    image_annotations = LimitedConnectionField(ImageAnnotationNode)
 
     tree = Field(TreeNode, urn=String(required=True), up_to=String(required=False))
 

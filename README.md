@@ -308,6 +308,54 @@ Retrieve text annotations for a given passage
   }
 }
 ```
+
+## Image Annotations
+
+### Sample Queries
+Retrieve image annotation applied to folios
+```
+{
+  imageAnnotations(first: 10) {
+    edges {
+      node {
+        idx
+        data
+        urn
+        canvasIdentifier
+        textParts(kind: "folio") {
+          edges {
+            node {
+              urn
+            }
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+Retrieve text parts annotated with images
+```
+{
+  textParts(urn: "urn:cts:greekLit:tlg0012.tlg001.msA-folios:12r") {
+    edges {
+      node {
+        imageAnnotations {
+          edges {
+            node {
+              urn
+              kind
+              imageIdentifier
+            }
+          }
+        }
+      }
+    }
+  }
+}
+```
+
 ## Named Entities
 
 ### Sample Queries
