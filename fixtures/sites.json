@@ -14,5 +14,13 @@
             "domain": "example.com",
             "name": "example.com"
         }
+    },
+    {
+        "pk": 3,
+        "model": "sites.site",
+        "fields": {
+            "domain": "aniop-atlas-staging.eldarion.com",
+            "name": "AniOp ATLAS [staging]"
+        }
     }
 ]

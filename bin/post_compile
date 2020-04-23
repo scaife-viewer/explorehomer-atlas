@@ -1,2 +1,3 @@
 #!/bin/bash
 python manage.py prepare_db
+python manage.py loaddata fixtures/sites.json

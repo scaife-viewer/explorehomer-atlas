@@ -1,4 +1,4 @@
-from django.db.models import Max, Min, Q
+from django.db.models import Q
 
 import django_filters
 from graphene import Connection, Field, ObjectType, String, relay
@@ -18,29 +18,16 @@ from .models import (
     Token,
 )
 from .urn import URN
-from .utils import get_chunker
+from .utils import (
+    extract_version_urn_and_ref,
+    filter_via_ref_predicate,
+    get_chunker,
+    get_textparts_from_passage_reference,
+)
 
 
 # @@@ alias Node because relay.Node is quite different
 TextPart = Node
-
-
-def extract_version_urn_and_ref(value):
-    dirty_version_urn, ref = value.rsplit(":", maxsplit=1)
-    # Restore the trailing ":".
-    version_urn = f"{dirty_version_urn}:"
-    return version_urn, ref
-
-
-def filter_via_ref_predicate(instance, queryset, predicate):
-    # We need a sequential identifier to do the range unless there is something
-    # else we can do with siblings / slicing within treebeard. Using `path`
-    # might work too, but having `idx` also allows us to do simple integer math
-    # as-needed.
-    if queryset.exists():
-        subquery = queryset.filter(predicate).aggregate(min=Min("idx"), max=Max("idx"))
-        queryset = queryset.filter(idx__gte=subquery["min"], idx__lte=subquery["max"])
-    return queryset
 
 
 class LimitedConnectionField(DjangoFilterConnectionField):
@@ -191,7 +178,7 @@ class TextPartFilterSet(django_filters.FilterSet):
             urn__startswith=version_urn,
             depth=len(start.split(".")) + 1,
         )
-        return filter_via_ref_predicate(self, queryset, predicate)
+        return filter_via_ref_predicate(queryset, predicate)
 
     class Meta:
         model = TextPart
@@ -219,52 +206,10 @@ class TextPartsReferenceFilterMixin:
 
         self.request.passage["version"] = version
 
-    def _build_predicate(self, queryset, ref, max_rank):
-        predicate = Q()
-        if not ref:
-            # @@@ get all the text parts in the work; do we want to support this
-            # or should we just return the first text part?
-            start = queryset.first().ref
-            end = queryset.last().ref
-        else:
-            try:
-                start, end = ref.split("-")
-            except ValueError:
-                start = end = ref
-
-        # @@@ still need to validate reference based on the depth
-        # start_book, start_line = instance._resolve_ref(start)
-        # end_book, end_line = instance._resolve_ref(end)
-        # the validation might be done through treebeard; for now
-        # going to avoid the queries at this time
-        if start:
-            if len(start.split(".")) == max_rank:
-                condition = Q(ref=start)
-            else:
-                condition = Q(ref__istartswith=f"{start}.")
-            predicate.add(condition, Q.OR)
-        if end:
-            if len(end.split(".")) == max_rank:
-                condition = Q(ref=end)
-            else:
-                condition = Q(ref__istartswith=f"{end}.")
-            predicate.add(condition, Q.OR)
-        if not start or not end:
-            raise ValueError(f"Invalid reference: {ref}")
-
-        return predicate
-
     def get_lowest_textparts_queryset(self, value):
         self._add_passage_to_context(value)
         version = self.request.passage["version"]
-        citation_scheme = version.metadata["citation_scheme"]
-        max_depth = version.get_descendants().last().depth
-
-        max_rank = len(citation_scheme)
-        queryset = version.get_descendants().filter(depth=max_depth)
-        _, ref = value.rsplit(":", maxsplit=1)
-        predicate = self._build_predicate(queryset, ref, max_rank)
-        return filter_via_ref_predicate(self, queryset, predicate)
+        return get_textparts_from_passage_reference(value, version=version)
 
 
 class PassageTextPartFilterSet(TextPartsReferenceFilterMixin, django_filters.FilterSet):
