@@ -8,6 +8,7 @@ from .views import (
 
 
 urlpatterns = [
+    # @@@ make format optional
     path(
         "<urn>/<slug:annotation_kind>/collection/<format>/",
         serve_web_annotation_collection,

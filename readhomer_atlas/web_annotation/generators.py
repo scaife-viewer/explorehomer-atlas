@@ -21,41 +21,31 @@ def map_dimensions_to_integers(dimensions):
     return int_dimensions
 
 
-class TranslationAlignmentGenerator:
-    slug = "translation-alignment"
-
-    def __init__(self, folio_urn, alignment):
-        self.urn = folio_urn
-        self.alignment = alignment
-        self.idx = alignment["idx"]
-
+class FolioImageAnnotationMixin:
     @cached_property
     def folio_image_urn(self):
         folio = Node.objects.get(urn=preferred_folio_urn(self.urn))
         return folio.image_annotations.first().urn
 
-    @property
-    def greek_lines(self):
-        return self.alignment["items"][0]
+    def get_absolute_url(self, body_format):
+        url = reverse_lazy(
+            "serve_web_annotation",
+            kwargs={
+                "urn": self.urn,
+                "annotation_kind": self.slug,
+                "idx": self.idx,
+                "format": body_format,
+            },
+        )
+        return build_absolute_url(url)
 
-    @property
-    def english_lines(self):
-        return self.alignment["items"][1]
+    @cached_property
+    def iiif_obj(self):
+        image_urn = self.folio_image_urn
+        return IIIFResolver(image_urn)
 
-    def as_text(self, lines):
-        return "\n".join([f"{l[0]}) {l[1]}" for l in lines])
 
-    def as_html(self, lines):
-        # @@@ this could be rendered via Django if we need fancier HTML
-        return "<ul>" + "".join([f"<li>{l[0]}) {l[1]}</li>" for l in lines]) + "</ul>"
-
-    @property
-    def alignment_urn(self):
-        # @@@ what if we have multiple alignments covering a single line?
-        # @@@ we can use the idx, but no too helpful downstream
-        version_urn = "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:"
-        return f'{version_urn}{self.alignment["citation"]}'
-
+class FolioBoundingBoxAnnotationMixin(FolioImageAnnotationMixin):
     def get_urn_coordinates(self, urns):
         # first convert urns to folio exmplar URNS
         predicate = Q()
@@ -97,59 +87,119 @@ class TranslationAlignmentGenerator:
         dimensions["h"] = y_coords[-1] - y_coords[0] + h * 100
         return dimensions
 
-    @cached_property
-    def common_obj(self):
-        cite_version_urn = "urn:cts:greekLit:tlg0012.tlg001.msA:"
-        urns = []
-        # @@@ this is a giant hack, would be better to resolve the citation ref
-        for ref, _, _ in self.greek_lines:
-            urns.append(f"{cite_version_urn}{ref}")
+    def get_bounding_boxes_for_urns(self, urns):
         urn_coordinates = self.get_urn_coordinates(urns)
         precise_bb_dimensions = self.get_bounding_box_dimensions(urn_coordinates)
-        bb_dimensions = map_dimensions_to_integers(precise_bb_dimensions)
+        return map_dimensions_to_integers(precise_bb_dimensions)
 
+    # @@@
+    def get_references_for_bounding_box(self):
+        raise NotImplementedError("Subclasses must implement this method")
+
+    @cached_property
+    def bb_dimensions(self):
+        references = self.get_references_for_bounding_box()
+        return self.get_bounding_boxes_for_urns(references)
+
+    @cached_property
+    def fragment_selector_value(self):
         dimensions_str = ",".join(
             [
-                str(bb_dimensions["x"]),
-                str(bb_dimensions["y"]),
-                str(bb_dimensions["w"]),
-                str(bb_dimensions["h"]),
+                str(self.bb_dimensions["x"]),
+                str(self.bb_dimensions["y"]),
+                str(self.bb_dimensions["w"]),
+                str(self.bb_dimensions["h"]),
             ]
         )
-        fragment_selector_val = f"xywh=percent:{dimensions_str}"
+        return f"xywh=percent:{dimensions_str}"
 
-        image_urn = self.folio_image_urn
-        iiif_obj = IIIFResolver(image_urn)
-        image_api_selector_region = iiif_obj.get_region_by_pct(bb_dimensions)
+    @cached_property
+    def image_api_selector_region(self):
+        return self.iiif_obj.get_region_by_pct(self.bb_dimensions)
 
+    @cached_property
+    def canvas_target_obj(self):
+        return {
+            "type": "SpecificResource",
+            "source": {"id": f"{self.iiif_obj.canvas_url}", "type": "Canvas"},
+            "selector": {
+                "type": "FragmentSelector",
+                "region": self.fragment_selector_value,
+            },
+        }
+
+    @cached_property
+    def image_target_obj(self):
+        return {
+            "type": "SpecificResource",
+            "source": {"id": f"{self.iiif_obj.identifier}", "type": "Image"},
+            "selector": {
+                "type": "ImageApiSelector",
+                "region": self.image_api_selector_region,
+            },
+        }
+
+    @cached_property
+    def image_request_url(self):
+        return self.iiif_obj.build_image_request_url(
+            region=self.image_api_selector_region
+        )
+
+
+class TranslationAlignmentGenerator(FolioBoundingBoxAnnotationMixin):
+    slug = "translation-alignment"
+
+    def __init__(self, folio_urn, alignment):
+        self.urn = folio_urn
+        self.alignment = alignment
+        self.idx = alignment["idx"]
+
+    @property
+    def greek_lines(self):
+        return self.alignment["items"][0]
+
+    @property
+    def english_lines(self):
+        return self.alignment["items"][1]
+
+    def as_text(self, lines):
+        return "\n".join([f"{l[0]}) {l[1]}" for l in lines])
+
+    def as_html(self, lines):
+        # @@@ this could be rendered via Django if we need fancier HTML
+        return "<ul>" + "".join([f"<li>{l[0]}) {l[1]}</li>" for l in lines]) + "</ul>"
+
+    @property
+    def alignment_urn(self):
+        # @@@ what if we have multiple alignments covering a single line?
+        # @@@ we can use the idx, but no too helpful downstream
+        version_urn = "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:"
+        return f'{version_urn}{self.alignment["citation"]}'
+
+    def get_references_for_bounding_box(self):
+        cite_version_urn = "urn:cts:greekLit:tlg0012.tlg001.msA:"
+        references = []
+        # @@@ this is a giant hack, would be better to resolve the citation ref
+        for ref, _, _ in self.greek_lines:
+            references.append(f"{cite_version_urn}{ref}")
+        return references
+
+    @cached_property
+    def common_obj(self):
         return {
             "@context": "http://www.w3.org/ns/anno.jsonld",
             "type": "Annotation",
             "target": [
                 self.alignment_urn,
-                {
-                    "type": "SpecificResource",
-                    "source": {"id": f"{iiif_obj.canvas_url}", "type": "Canvas"},
-                    "selector": {
-                        "type": "FragmentSelector",
-                        "region": fragment_selector_val,
-                    },
-                },
-                {
-                    "type": "SpecificResource",
-                    "source": {"id": f"{iiif_obj.identifier}", "type": "Image"},
-                    "selector": {
-                        "type": "ImageApiSelector",
-                        "region": image_api_selector_region,
-                    },
-                },
-                iiif_obj.build_image_request_url(region=image_api_selector_region),
+                self.canvas_target_obj,
+                self.image_target_obj,
+                self.image_request_url,
             ],
         }
 
     def get_textual_bodies(self, body_format):
         bodies = [
-            {"type": "TextualBody", "language": "el"},
+            {"type": "TextualBody", "language": "grc"},
             {"type": "TextualBody", "language": "en"},
         ]
         if body_format == "text":
@@ -161,18 +211,6 @@ class TranslationAlignmentGenerator:
                 body["format"] = "text/plain"
                 body["value"] = self.as_html(lines)
         return bodies
-
-    def get_absolute_url(self, body_format):
-        url = reverse_lazy(
-            "serve_web_annotation",
-            kwargs={
-                "urn": self.urn,
-                "annotation_kind": self.slug,
-                "idx": self.idx,
-                "format": body_format,
-            },
-        )
-        return build_absolute_url(url)
 
     def get_object_for_body_format(self, body_format):
         obj = {
@@ -191,7 +229,7 @@ class TranslationAlignmentGenerator:
         return self.get_object_for_body_format("html")
 
 
-class NamedEntitiesGenerator:
+class NamedEntitiesGenerator(FolioImageAnnotationMixin):
     slug = "named-entities"
 
     def __init__(self, folio_urn, named_entity):
@@ -200,28 +238,8 @@ class NamedEntitiesGenerator:
         # @@@
         self.idx = named_entity["idx"]
 
-    # @@@ factor this out
-    @cached_property
-    def folio_image_urn(self):
-        folio = Node.objects.get(urn=preferred_folio_urn(self.urn))
-        return folio.image_annotations.first().urn
-
-    def get_absolute_url(self, body_format):
-        url = reverse_lazy(
-            "serve_web_annotation",
-            kwargs={
-                "urn": self.urn,
-                "annotation_kind": self.slug,
-                "idx": self.idx,
-                "format": body_format,
-            },
-        )
-        return build_absolute_url(url)
-
     @property
     def compound_obj(self):
-        image_urn = self.folio_image_urn
-        iiif_obj = IIIFResolver(image_urn)
         work_label = "Venetus A"
         return {
             "id": self.get_absolute_url("compound"),
@@ -235,7 +253,7 @@ class NamedEntitiesGenerator:
                 },
             ],
             "type": "Annotation",
-            "label": f'Named Entity data for {work_label} {iiif_obj.munged_image_path} text "{self.named_entity["token"].word_value}"',
+            "label": f'Named Entity data for {work_label} {self.iiif_obj.munged_image_path} text "{self.named_entity["token"].word_value}"',
             "creator": "https://scaife-viewer.org/",
             "body": [
                 {
@@ -254,13 +272,63 @@ class NamedEntitiesGenerator:
                 {
                     "type": "SpecificResource",
                     "partOf": [
-                        {"id": iiif_obj.collection_manifest_url, "type": "Manifest"}
+                        {
+                            "id": self.iiif_obj.collection_manifest_url,
+                            "type": "Manifest",
+                        }
                     ],
-                    "source": {"id": f"{iiif_obj.canvas_url}", "type": "Canvas"},
+                    "source": {"id": f"{self.iiif_obj.canvas_url}", "type": "Canvas"},
                 },
                 # @@@ URI / ASCII requirements and our subpaths
                 f'{self.named_entity["token"].text_part.urn}@{self.named_entity["token"].subref_value}',
             ],
+        }
+
+
+class AudioAnnotationsGenerator(FolioBoundingBoxAnnotationMixin):
+    slug = "audio-annotations"
+
+    def __init__(self, folio_urn, audio_annotation):
+        self.urn = folio_urn
+        self.audio_annotation = audio_annotation["obj"]
+        # @@@
+        self.idx = audio_annotation["idx"]
+
+    @cached_property
+    def annotation_references(self):
+        return list(self.audio_annotation.text_parts.values_list("urn", flat=True))
+
+    def get_references_for_bounding_box(self):
+        return self.annotation_references
+
+    @property
+    def body(self):
+        return {
+            "id": self.audio_annotation.asset_url,
+            # @@@ retrieve this from individual annotations
+            "rights": "https://creativecommons.org/licenses/by/4.0/",
+            "creator": {
+                "id": "http://hypotactic.com/",
+                "name": "David Chamberlain",
+                "type": "Person",
+            },
+            "format": "audio/mp4",
+            "language": "grc",
+        }
+
+    @property
+    def compound_obj(self):
+        return {
+            "id": self.get_absolute_url("compound"),
+            "@context": "http://www.w3.org/ns/anno.jsonld",
+            "type": "Annotation",
+            "target": [
+                self.annotation_references[0],
+                self.canvas_target_obj,
+                self.image_target_obj,
+                self.image_request_url,
+            ],
+            "body": self.body,
         }
 
 
@@ -295,4 +363,5 @@ def get_generator_for_kind(annotation_kind):
     return {
         "translation-alignment": TranslationAlignmentGenerator,
         "named-entities": NamedEntitiesGenerator,
+        "audio-annotations": AudioAnnotationsGenerator,
     }[annotation_kind]
