@@ -5,6 +5,7 @@ from django.contrib import admin
 
 from graphene_django.views import GraphQLView
 
+from .ducat_wrapper.views import DucatApp, serve_cex
 from .tocs.views import serve_toc, tocs_index
 
 
@@ -14,4 +15,6 @@ urlpatterns = [
     path("tocs/<filename>", serve_toc, name="serve_toc"),
     path("tocs/", tocs_index, name="tocs_index"),
     path("wa/", include("readhomer_atlas.web_annotation.urls")),
+    path("ducat/<filename>", serve_cex, name="serve_cex"),
+    path("ducat/", DucatApp.as_view(), name="ducat"),
 ]

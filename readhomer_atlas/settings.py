@@ -131,6 +131,7 @@ INSTALLED_APPS = [
     "treebeard",
     # project
     "readhomer_atlas",
+    "readhomer_atlas.ducat_wrapper",
     "readhomer_atlas.library",
     "readhomer_atlas.tocs",
     "readhomer_atlas.web_annotation",
