@@ -184,12 +184,12 @@ class MetricalAnnotation(models.Model):
         index = 0
         for foot in foot_code:
             if foot == "a":
-                syllables = line_data[index:index+3]
+                syllables = line_data[index : index + 3]
                 index += 3
             else:
-                syllables = line_data[index:index+2]
+                syllables = line_data[index : index + 2]
                 index += 2
-            print(f'|', end="", file=buffer)
+            print(f"|", end="", file=buffer)
             for i, syllable in enumerate(syllables):
                 if i > 0 and syllable["word_pos"] in [None, "r"]:
                     print(" ", end="", file=buffer)
