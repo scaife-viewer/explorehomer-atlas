@@ -6,8 +6,7 @@ from django.conf import settings
 from ..models import MetricalAnnotation
 
 
-# @@@ do we need COPYRIGHT_FRAGMENT like we have for the audio?
-
+COPYRIGHT_FRAGMENT = "© 2016 David Chamberlain under CC BY 4.0 License, https://creativecommons.org/licenses/by/4.0/"
 
 ANNOTATIONS_DATA_PATH = os.path.join(
     settings.PROJECT_ROOT, "data", "annotations", "metrical-annotations"
@@ -157,7 +156,13 @@ def import_metrical_annotations(reset=False):
     for line in processor.lines(raw_path):
         data = {}
         data.update(zip(header, line))
-        data["references"] = [f'{version_urn}1.{data["line_num"]}']
+        data.update(
+            {
+                "references": [f'{version_urn}1.{data["line_num"]}'],
+                # @@@ consider normalizing out to an attribution model
+                "attribution": COPYRIGHT_FRAGMENT,
+            }
+        )
         urn = f"{CITE_IDENTIFIER}{idx + 1}"
         ma = MetricalAnnotation(data=data, idx=idx, urn=urn)
         ma.html_content = ma.generate_html()
