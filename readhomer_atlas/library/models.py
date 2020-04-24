@@ -180,7 +180,26 @@ class MetricalAnnotation(models.Model):
         """
         |μῆ:νιν :ἄ|ει:δε :θε|ὰ /Πη|λη:ϊ:ά|δεω :Ἀ:χι|λῆ:ος
         """
-        pass
+        buffer = io.StringIO()
+        index = 0
+        for foot in foot_code:
+            if foot == "a":
+                syllables = line_data[index:index+3]
+                index += 3
+            else:
+                syllables = line_data[index:index+2]
+                index += 2
+            print(f'|', end="", file=buffer)
+            for i, syllable in enumerate(syllables):
+                if i > 0 and syllable["word_pos"] in [None, "r"]:
+                    print(" ", end="", file=buffer)
+                if syllable["caesura"]:
+                    print("/", end="", file=buffer)
+                elif i > 0:
+                    print(":", end="", file=buffer)
+                print(syllable["text"], end="", file=buffer)
+        buffer.seek(0)
+        return strip_spaces_between_tags(buffer.read()).strip()
 
     def resolve_references(self):
         if "references" not in self.data:
