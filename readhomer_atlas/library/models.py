@@ -6,7 +6,6 @@ from collections import defaultdict
 from django.conf import settings
 from django.core import serializers
 from django.db import models
-from django.utils.html import strip_spaces_between_tags
 
 # @@@ https://code.djangoproject.com/ticket/12990
 from django_extensions.db.fields.json import JSONField
@@ -174,7 +173,7 @@ class MetricalAnnotation(models.Model):
         print(f"\n          </div>", file=buffer)
         print(f"        </li>", file=buffer)
         buffer.seek(0)
-        return strip_spaces_between_tags(buffer.read()).strip()
+        return buffer.read().strip()
 
     def generate_compact_form(self):
         """
@@ -199,7 +198,7 @@ class MetricalAnnotation(models.Model):
                     print(":", end="", file=buffer)
                 print(syllable["text"], end="", file=buffer)
         buffer.seek(0)
-        return strip_spaces_between_tags(buffer.read()).strip()
+        return buffer.read().strip()
 
     def resolve_references(self):
         if "references" not in self.data:
