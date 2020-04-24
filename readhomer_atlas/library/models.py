@@ -182,12 +182,12 @@ class MetricalAnnotation(models.Model):
         """
         buffer = io.StringIO()
         index = 0
-        for foot in foot_code:
+        for foot in self.foot_code:
             if foot == "a":
-                syllables = line_data[index : index + 3]
+                syllables = self.line_data[index : index + 3]
                 index += 3
             else:
-                syllables = line_data[index : index + 2]
+                syllables = self.line_data[index : index + 2]
                 index += 2
             print(f"|", end="", file=buffer)
             for i, syllable in enumerate(syllables):
