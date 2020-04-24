@@ -161,6 +161,7 @@ def import_metrical_annotations(reset=False):
         urn = f"{CITE_IDENTIFIER}{idx + 1}"
         ma = MetricalAnnotation(data=data, idx=idx, urn=urn)
         ma.html_content = ma.generate_html()
+        ma.short_form = ma.generate_compact_form()
         to_create.append(ma)
         idx += 1
 
