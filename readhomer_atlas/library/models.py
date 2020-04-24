@@ -107,7 +107,9 @@ class MetricalAnnotation(models.Model):
     data = JSONField(default=dict, blank=True)
 
     html_content = models.TextField()
-    short_form = models.TextField()
+    short_form = models.TextField(
+        help_text='"|" indicates the start of a foot, ":" indicates a syllable boundary within a foot and "/" indicates a caesura.'
+    )
 
     idx = models.IntegerField(help_text="0-based index")
     text_parts = SortedManyToManyField(
@@ -175,7 +177,7 @@ class MetricalAnnotation(models.Model):
         buffer.seek(0)
         return buffer.read().strip()
 
-    def generate_compact_form(self):
+    def generate_short_form(self):
         """
         |μῆ:νιν :ἄ|ει:δε :θε|ὰ /Πη|λη:ϊ:ά|δεω :Ἀ:χι|λῆ:ος
         """
