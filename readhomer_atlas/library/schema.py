@@ -11,6 +11,7 @@ from graphene_django.utils import camelize
 from .models import (
     AudioAnnotation,
     ImageAnnotation,
+    MetricalAnnotation,
     NamedEntity,
     Node,
     TextAlignment,
@@ -343,6 +344,16 @@ class TextAnnotationNode(DjangoObjectType):
         filter_fields = ["urn"]
 
 
+class MetricalAnnotationNode(DjangoObjectType):
+    data = generic.GenericScalar()
+    metrical_pattern = String()
+
+    class Meta:
+        model = MetricalAnnotation
+        interfaces = (relay.Node,)
+        filter_fields = ["urn"]
+
+
 class ImageAnnotationNode(DjangoObjectType):
     text_parts = LimitedConnectionField(lambda: TextPartNode)
     data = generic.GenericScalar()
@@ -398,6 +409,9 @@ class Query(ObjectType):
 
     text_annotation = relay.Node.Field(TextAnnotationNode)
     text_annotations = LimitedConnectionField(TextAnnotationNode)
+
+    metrical_annotation = relay.Node.Field(MetricalAnnotationNode)
+    metrical_annotations = LimitedConnectionField(MetricalAnnotationNode)
 
     image_annotation = relay.Node.Field(ImageAnnotationNode)
     image_annotations = LimitedConnectionField(ImageAnnotationNode)
