@@ -511,6 +511,22 @@ Retrieve named entities for text part tokens
 }
 ```
 
+Retreive named entities given a passage reference
+```
+{
+  namedEntities(reference:"urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1.1-1.7") {
+    edges {
+      node {
+        id
+        title
+        description
+        url
+      }
+    }
+  }
+}
+```
+
 
 ## Tests
 
