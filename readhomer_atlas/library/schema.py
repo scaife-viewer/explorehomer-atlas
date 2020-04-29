@@ -386,11 +386,23 @@ class TokenNode(DjangoObjectType):
         filterset_class = TokenFilterSet
 
 
+class NamedEntityFilterSet(TextPartsReferenceFilterMixin, django_filters.FilterSet):
+    reference = django_filters.CharFilter(method="reference_filter")
+
+    class Meta:
+        model = NamedEntity
+        fields = ["urn"]
+
+    def reference_filter(self, queryset, name, value):
+        textparts_queryset = self.get_lowest_textparts_queryset(value)
+        return queryset.filter(tokens__text_part__in=textparts_queryset).distinct()
+
+
 class NamedEntityNode(DjangoObjectType):
     class Meta:
-        filter_fields = ["urn"]
         model = NamedEntity
         interfaces = (relay.Node,)
+        filterset_class = NamedEntityFilterSet
 
 
 class Query(ObjectType):
