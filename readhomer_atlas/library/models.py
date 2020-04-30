@@ -352,16 +352,34 @@ class Token(models.Model):
         "Node", related_name="tokens", on_delete=models.CASCADE
     )
 
-    value = models.CharField(max_length=255)
-
+    value = models.CharField(
+        max_length=255,
+        help_text="the tokenized value of a text part (usually whitespace separated)",
+    )
     # @@@ consider JSON or EAV to store / filter attrs
-    word_value = models.CharField(max_length=255, blank=True, null=True)
-    subref_value = models.CharField(max_length=255, blank=True, null=True)
     uuid = models.CharField(max_length=255, blank=True, null=True)
-    lemma = models.CharField(max_length=255, blank=True, null=True)
-    gloss = models.CharField(max_length=255, blank=True, null=True)
+    word_value = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text="the normalized version of the value (no punctuation)",
+    )
+    subref_value = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text="the value for the CTS subreference targeting a particular token",
+    )
+    lemma = models.CharField(
+        max_length=255, blank=True, null=True, help_text="the lemma for the token value"
+    )
+    gloss = models.CharField(
+        max_length=255, blank=True, null=True, help_text="the interlinear gloss"
+    )
     part_of_speech = models.CharField(max_length=255, blank=True, null=True)
-    tag = models.CharField(max_length=255, blank=True, null=True)
+    tag = models.CharField(
+        max_length=255, blank=True, null=True, help_text="part-of-speech tag"
+    )
     case = models.CharField(max_length=255, blank=True, null=True)
     mood = models.CharField(max_length=255, blank=True, null=True)
     named_entity = models.CharField(max_length=255, blank=True, null=True)
