@@ -179,54 +179,30 @@ class TranslationAlignmentGenerator(FolioBoundingBoxAnnotationMixin):
             references.append(f"{cite_version_urn}{ref}")
         return references
 
+    def get_textual_bodies(self):
+        bodies = [
+            {"type": "TextualBody", "language": "grc"},
+            {"type": "TextualBody", "language": "en"},
+        ]
+        for body, lines in zip(bodies, [self.greek_lines, self.english_lines]):
+            body["format"] = "text/plain"
+            body["value"] = self.as_html(lines)
+        return bodies
+
     @cached_property
-    def common_obj(self):
+    def obj(self):
         return {
             "@context": "http://www.w3.org/ns/anno.jsonld",
             "type": "Annotation",
+            "id": self.get_absolute_url(),
             "target": [
                 self.alignment_urn,
                 self.canvas_target_obj,
                 self.image_target_obj,
                 self.image_request_url,
             ],
+            "body": self.get_textual_bodies(),
         }
-
-    def get_textual_bodies(self, body_format):
-        bodies = [
-            {"type": "TextualBody", "language": "grc"},
-            {"type": "TextualBody", "language": "en"},
-        ]
-        if body_format == "text":
-            for body, lines in zip(bodies, [self.greek_lines, self.english_lines]):
-                body["format"] = "text/plain"
-                body["value"] = self.as_text(lines)
-        elif body_format == "html":
-            for body, lines in zip(bodies, [self.greek_lines, self.english_lines]):
-                body["format"] = "text/plain"
-                body["value"] = self.as_html(lines)
-        return bodies
-
-    def get_object_for_body_format(self, body_format):
-        obj = {
-            "body": self.get_textual_bodies(body_format),
-            "id": self.get_absolute_url(),
-        }
-        obj.update(self.common_obj)
-        return obj
-
-    # @@@@ deprecated and no longer routable
-    @property
-    def text_obj(self):
-        return self.get_object_for_body_format("text")
-
-    @property
-    def html_obj(self):
-        return self.get_object_for_body_format("html")
-
-    @property
-    def obj(self):
-        return self.html_obj
 
 
 class NamedEntitiesGenerator(FolioImageAnnotationMixin):
