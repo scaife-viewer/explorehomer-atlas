@@ -382,7 +382,6 @@ class Token(models.Model):
     )
     case = models.CharField(max_length=255, blank=True, null=True)
     mood = models.CharField(max_length=255, blank=True, null=True)
-    named_entity = models.CharField(max_length=255, blank=True, null=True)
 
     position = models.IntegerField()
     idx = models.IntegerField(help_text="0-based index")
