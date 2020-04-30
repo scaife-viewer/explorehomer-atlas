@@ -88,20 +88,20 @@ class PassageTextPartConnection(Connection):
         return f"{version.urn}{passage_ref}"
 
     def get_ancestor_metadata(self, version, obj):
-        # @@@ this is currently the "first" ancestor
-        # and we need to stop it at the version boundary for backwards
+        # @@@ we need to stop it at the version boundary for backwards
         # compatability with SV
         data = []
         if obj and obj.get_parent() != version:
-            ancestor_urn = obj.urn.rsplit(".", maxsplit=1)[0]
-            ancestor_ref = ancestor_urn.rsplit(":", maxsplit=1)[1]
-            data.append(
-                {
-                    # @@@ proper name for this is ref or position?
-                    "ref": ancestor_ref,
-                    "urn": ancestor_urn,
-                }
-            )
+            ancestor_refparts = obj.ref.split(".")[:-1]
+            for pos, part in enumerate(ancestor_refparts):
+                ancestor_ref = ".".join(ancestor_refparts[:pos + 1])
+                data.append(
+                    {
+                        # @@@ proper name for this is ref or position?
+                        "ref": ancestor_ref,
+                        "urn": f"{version.urn}{ancestor_ref}",
+                    }
+                )
         return data
 
     def get_sibling_metadata(self, version, all_queryset, start_idx, count):
