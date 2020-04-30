@@ -12,7 +12,11 @@ from .generators import (
 )
 from .shims import AlignmentsShim, AudioAnnotationsShim, NamedEntitiesShim
 from .shortcuts import build_absolute_url
-from .utils import as_zero_based, preferred_folio_urn
+from .utils import (
+    as_zero_based,
+    folio_exemplar_urn_to_site_urn,
+    preferred_folio_urn,
+)
 
 
 PAGE_SIZE = 10
@@ -167,5 +171,38 @@ def discovery(request):
         return HttpResponseBadRequest("canvas_id is required")
 
     image_annotation = get_object_or_404(ImageAnnotation, canvas_identifier=canvas_id)
+    folio_exemplar_urn = image_annotation.text_parts.first().urn
+    cite_urn = folio_exemplar_urn_to_site_urn(folio_exemplar_urn)
     collections = []
+    # @@@ move metadata to shim classes
+    # or otherwise encapsulate the queries required
+    possible_collections = [
+        {
+            "annotation_kind": "translation-alignment",
+            "shim_class": AlignmentsShim,
+            "default_format": "html",
+        },
+        {
+            "annotation_kind": "named-entities",
+            "shim_class": NamedEntitiesShim,
+            "default_format": "compound",
+        },
+        {
+            "annotation_kind": "audio-annotations",
+            "shim_class": AudioAnnotationsShim,
+            "default_format": "compound",
+        },
+    ]
+    for possibility in possible_collections:
+        shim_obj = possibility["shim_class"](cite_urn)
+        if shim_obj.get_object_list(fields=["idx"]):
+            collection_url = reverse_lazy(
+                "serve_web_annotation_collection",
+                kwargs={
+                    "urn": cite_urn,
+                    "annotation_kind": possibility["annotation_kind"],
+                    "format": possibility["default_format"],
+                },
+            )
+            collections.append(build_absolute_url(collection_url))
     return JsonResponse({"collections": collections})
