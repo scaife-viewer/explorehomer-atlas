@@ -357,7 +357,6 @@ class Token(models.Model):
         help_text="the tokenized value of a text part (usually whitespace separated)",
     )
     # @@@ consider JSON or EAV to store / filter attrs
-    uuid = models.CharField(max_length=255, blank=True, null=True)
     word_value = models.CharField(
         max_length=255,
         blank=True,
@@ -386,6 +385,13 @@ class Token(models.Model):
     position = models.IntegerField()
     idx = models.IntegerField(help_text="0-based index")
 
+    ve_ref = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text="a human-readable reference to the token via a virtualized exemplar",
+    )
+
     @staticmethod
     def get_word_value(value):
         return re.sub(r"[^\w]", "", value)
@@ -413,14 +419,14 @@ class Token(models.Model):
             subref_idx = idx[w]
             subref_value = f"{w}[{subref_idx}]"
 
+            position = pos + 1
             to_create.append(
                 cls(
                     text_part=text_part_node,
                     value=piece,
                     word_value=w,
-                    position=pos + 1,
-                    # @@@ not a true uuid
-                    uuid=f"t{text_part_node.ref}_{pos}",
+                    position=position,
+                    ve_ref=f"{text_part_node.ref}.t{position}",
                     idx=counters["token_idx"],
                     subref_value=subref_value,
                 )
