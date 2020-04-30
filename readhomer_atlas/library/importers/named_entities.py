@@ -25,12 +25,15 @@ def _populate_lookup(path, lookup):
     with open(path, encoding="utf-8-sig") as f:
         reader = csv.DictReader(f)
         for row in reader:
+            urn = row["urn"]
+            kind = "person" if urn.count("pers") > 0 else "place"
             named_entity, _ = NamedEntity.objects.get_or_create(
-                urn=row["urn"],
+                urn=urn,
                 defaults={
                     "title": row["label"],
                     "description": row["description"],
                     "url": row["link"],
+                    "kind": kind,
                 },
             )
             lookup[named_entity.urn] = named_entity
