@@ -152,7 +152,7 @@ class PassageTextPartConnection(Connection):
             end_obj = version.get_descendants().get(ref=last_ref)
 
         data = {}
-        siblings_qs = start_obj.get_siblings()
+        siblings_qs = start_obj.get_refpart_siblings(version)
         start_idx = start_obj.idx
         chunk_length = end_obj.idx - start_obj.idx + 1
         data["ancestors"] = self.get_ancestor_metadata(version, start_obj)
