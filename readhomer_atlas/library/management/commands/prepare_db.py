@@ -32,9 +32,9 @@ class Command(BaseCommand):
 
         self.stdout.write("--[Loading metrical annotations]--")
         importers.metrical_annotations.import_metrical_annotations(reset=True)
-
-        self.stdout.write("--[Loading image annotations]--")
-        importers.image_annotations.import_image_annotations(reset=True)
+        # @@@ skip for now
+        # self.stdout.write("--[Loading image annotations]--")
+        # importers.image_annotations.import_image_annotations(reset=True)
 
         self.stdout.write("--[Loading audio annotations]--")
         importers.audio_annotations.import_audio_annotations(reset=True)
