@@ -22,7 +22,7 @@ def get_entity_paths():
 
 
 def _populate_lookup(path, lookup):
-    with open(path) as f:
+    with open(path, encoding="utf-8-sig") as f:
         reader = csv.DictReader(f)
         for row in reader:
             named_entity, _ = NamedEntity.objects.get_or_create(
@@ -45,7 +45,7 @@ def get_standoff_paths():
 
 
 def _apply_entities(path, lookup):
-    with open(path) as f:
+    with open(path, encoding="utf-8-sig") as f:
         reader = csv.DictReader(f)
         for row in reader:
             named_entity = lookup[row["named_entity_urn"]]
