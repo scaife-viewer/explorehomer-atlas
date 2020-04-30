@@ -1,11 +1,11 @@
 from django.conf import settings
 from django.core.paginator import EmptyPage, Paginator
-from django.http import Http404, JsonResponse
+from django.http import Http404, HttpResponseBadRequest, JsonResponse
 from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy
 from django.views.decorators.cache import cache_page
 
-from ..library.models import Node
+from ..library.models import ImageAnnotation, Node
 from .generators import (
     WebAnnotationCollectionGenerator,
     get_generator_for_kind,
@@ -158,3 +158,14 @@ def serve_web_annotation_page(request, annotation_kind, urn, format, zero_page_n
         )
         data["next"] = build_absolute_url(next_url)
     return JsonResponse(data)
+
+
+@cache_page(settings.DEFAULT_HTTP_CACHE_DURATION)
+def discovery(request):
+    canvas_id = request.GET.get("canvas_id")
+    if not canvas_id:
+        return HttpResponseBadRequest("canvas_id is required")
+
+    image_annotation = get_object_or_404(ImageAnnotation, canvas_identifier=canvas_id)
+    collections = []
+    return JsonResponse({"collections": collections})

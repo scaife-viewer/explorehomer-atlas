@@ -1,6 +1,7 @@
 from django.urls import path
 
 from .views import (
+    discovery,
     serve_wa,
     serve_web_annotation_collection,
     serve_web_annotation_page,
@@ -24,4 +25,5 @@ urlpatterns = [
         serve_wa,
         name="serve_web_annotation",
     ),
+    path("discovery/", discovery, name="web_annotation_discovery",),
 ]
