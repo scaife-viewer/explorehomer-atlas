@@ -41,3 +41,8 @@ class Command(BaseCommand):
 
         self.stdout.write("--[Loading alignments]--")
         importers.alignments.import_alignments(reset=True)
+
+        # @@@
+        importers.alignments.process_cex(
+            "data/annotations/text-alignments/raw/tlg0012.tlg001.word_alignment.cex"
+        )

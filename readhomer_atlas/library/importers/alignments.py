@@ -306,3 +306,95 @@ def sentence_alignment_fresh_start():
         text_part__urn="urn:cts:greekLit:tlg0012.tlg001.perseus-eng3:1.1", position=3
     )
     relation_b.tokens.set(tokens)
+
+
+def process_cex(path):
+    path = "data/annotations/text-alignments/raw/tlg0012.tlg001.word_alignment.cex"
+    lookup = {}
+    with open(path) as f:
+        for line in f:
+            if line.startswith("urn:cite2:ducat:alignments.temp:") and line.count(
+                "urn:cite2:cite:verbs.v1:aligns"
+            ):
+                alignment_id, _, urn = line.strip().split("#")
+                lang = "greek" if urn.count("grc") else "english"
+                alignment = lookup.setdefault(
+                    alignment_id, {"greek": [], "english": []}
+                )
+                alignment[lang].append(urn)
+
+    alignments = list(lookup.values())
+
+    def sort_textpart(urn):
+        _, ref = urn.rsplit(":", maxsplit=1)
+        book, line, position = [int(i) for i in ref.split(".")]
+        return (book, line, position)
+
+    unique_alignments = set()
+    for alignment in alignments:
+        greek = sorted(alignment["greek"], key=sort_textpart)
+        english = sorted(alignment["english"], key=sort_textpart)
+        sort_key = sort_textpart(alignment["greek"][0])
+        unique_alignments.add((sort_key, tuple(greek), tuple(english)))
+
+    unique_alignments = list(unique_alignments)
+    alignments = sorted(unique_alignments, key=lambda x: x[0])
+
+    version_a = Node.objects.get(urn="urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:")
+    version_b = Node.objects.get(urn="urn:cts:greekLit:tlg0012.tlg001.perseus-eng3:")
+    alignment = TextAlignment(name="Iliad Word Alignment", slug="iliad-word-alignment")
+    alignment.save()
+    alignment.versions.set([version_a, version_b])
+
+    def get_ref(urn):
+        _, ref = urn.rsplit(":", maxsplit=1)
+        return ref
+
+    def get_textpart_ref(urn):
+        ref = get_ref(urn)
+        text_part_ref, position = ref.rsplit(".", maxsplit=1)
+        return text_part_ref
+
+    idx = 0
+    for sort_key, greek, english in alignments:
+        citation = ".".join([str(s) for s in sort_key])
+        record = TextAlignmentChunk(citation=citation, idx=idx, alignment=alignment)
+        record.save()
+        idx += 1
+
+        relation_a = TextAlignmentChunkRelation(
+            version=version_a, alignment_chunk=record, citation=citation,
+        )
+        relation_a.save()
+        # @@@ ve_ref would save us here quite a bit
+        tokens = []
+        for urn in greek:
+            ref = get_ref(urn)
+            text_part_ref, position = ref.rsplit(".", maxsplit=1)
+            text_part_urn = f"{version_a.urn}{text_part_ref}"
+            tokens.append(
+                Token.objects.get(text_part__urn=text_part_urn, position=position)
+            )
+        relation_a.tokens.set(tokens)
+
+        relation_b = TextAlignmentChunkRelation(
+            # @@@ citation is backwards incompatible with prior data
+            version=version_b,
+            alignment_chunk=record,
+            citation=citation,
+        )
+        relation_b.save()
+
+        # @@@ ve_ref would save us here quite a bit
+        tokens = []
+        for urn in english:
+            ref = get_ref(urn)
+            text_part_ref, position = ref.rsplit(".", maxsplit=1)
+            text_part_urn = f"{version_b.urn}{text_part_ref}"
+            tokens.append(
+                Token.objects.get(text_part__urn=text_part_urn, position=position)
+            )
+        relation_b.tokens.set(tokens)
+
+        record.items = list(record.denorm_relations())
+        record.save()
