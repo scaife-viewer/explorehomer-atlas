@@ -17,10 +17,10 @@ from ..models import (
 ALIGNMENTS_DATA_PATH = os.path.join(settings.PROJECT_ROOT, "data", "alignments")
 ALIGNMENTS_METADATA_PATH = os.path.join(ALIGNMENTS_DATA_PATH, "metadata.json")
 
-LINE_KIND_UNKNOWN = None
-LINE_KIND_NEW = "new"
-LINE_KIND_CONTINUES = "continues"
-LINE_KIND_CONTINUATION = "continuation"
+# LINE_KIND_UNKNOWN = None
+# LINE_KIND_NEW = "new"
+# LINE_KIND_CONTINUES = "continues"
+# LINE_KIND_CONTINUATION = "continuation"
 
 CITATION_REFERENCE_REGEX = re.compile(r"\d+\.\d+")
 CONTENT_REFERENCE_REGEX = re.compile(r"\[\d+\.\d+\]")
@@ -106,20 +106,22 @@ def get_alignment_milestones(path):
                     "greek_content": cleaned_greek_content,
                     "english_content": [
                         # @@@ continuation
-                        (citation, row[3], LINE_KIND_UNKNOWN)
+                        # (citation, row[3], LINE_KIND_UNKNOWN)
+                        (citation, row[3])
                     ],
                 }
             )
 
-    for milestone_idx, alignment in enumerate(ALIGNMENTS):
-        for pos, entry in enumerate(alignment["greek_content"]):
-            offsets = LEAVES_TO_MILESTONES[entry[0]]
-            if [milestone_idx] == offsets:
-                alignment["greek_content"][pos] += (LINE_KIND_NEW,)
-            elif offsets[0] == milestone_idx:
-                alignment["greek_content"][pos] += (LINE_KIND_CONTINUES,)
-            else:
-                alignment["greek_content"][pos] += (LINE_KIND_CONTINUATION,)
+    # @@@ restore continuation data
+    # for milestone_idx, alignment in enumerate(ALIGNMENTS):
+    #     for pos, entry in enumerate(alignment["greek_content"]):
+    #         offsets = LEAVES_TO_MILESTONES[entry[0]]
+    #         if [milestone_idx] == offsets:
+    #             alignment["greek_content"][pos] += (LINE_KIND_NEW,)
+    #         elif offsets[0] == milestone_idx:
+    #             alignment["greek_content"][pos] += (LINE_KIND_CONTINUES,)
+    #         else:
+    #             alignment["greek_content"][pos] += (LINE_KIND_CONTINUATION,)
 
     return {"ALIGNMENTS": ALIGNMENTS, "LEAVES_TO_MILESTONES": LEAVES_TO_MILESTONES}
 
