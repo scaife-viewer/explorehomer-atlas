@@ -5,7 +5,13 @@ import re
 
 from django.conf import settings
 
-from ..models import Node, TextAlignment, TextAlignmentChunk
+from ..models import (
+    Node,
+    TextAlignment,
+    TextAlignmentChunk,
+    TextAlignmentChunkRelation,
+    Token,
+)
 
 
 ALIGNMENTS_DATA_PATH = os.path.join(settings.PROJECT_ROOT, "data", "alignments")
@@ -187,3 +193,30 @@ def import_alignments(reset=False):
     alignments_metadata = json.load(open(ALIGNMENTS_METADATA_PATH))
     for alignment_data in alignments_metadata["alignments"]:
         _import_alignment(alignment_data)
+
+
+def sentence_alignment_fresh_start():
+    version_a = Node.objects.get(urn="urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:")
+    version_b = Node.objects.get(urn="urn:cts:greekLit:tlg0012.tlg001.perseus-eng3:")
+    alignment = TextAlignment(
+        name="Iliad Sentence Alignment", slug="iliad-sentence-alignment"
+    )
+    alignment.save()
+    alignment.versions.set([version_a, version_b])
+
+    record = TextAlignmentChunk(citation="1.1-1.7", alignment=alignment)
+    record.save()
+
+    relation_a = TextAlignmentChunkRelation(
+        version=version_a, alignment_chunk=record, citation="1.1-1.7"
+    )
+    relation_a.save()
+    text_parts = version_a.get_descendants().filter(kind="line")[0:7]
+    relation_a.tokens.set(Token.objects.filter(text_part__in=text_parts))
+
+    relation_b = TextAlignmentChunkRelation(
+        version=version_b, alignment_chunk=record, citation="1.1"
+    )
+    relation_b.save()
+    text_parts = version_b.get_descendants().filter(kind="card")[0:1]
+    relation_b.tokens.set(Token.objects.filter(text_part__in=text_parts)[0:63])
