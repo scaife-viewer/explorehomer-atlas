@@ -302,9 +302,7 @@ class TextAlignmentChunkFilterSet(
 
     class Meta:
         model = TextAlignmentChunk
-        fields = [
-            "idx",
-        ]
+        fields = ["idx", "alignment", "alignment__slug"]
 
     def reference_filter(self, queryset, name, value):
         textparts_queryset = self.get_lowest_textparts_queryset(value)

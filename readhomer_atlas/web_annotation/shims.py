@@ -1,6 +1,6 @@
 from django.utils.functional import cached_property
 
-from ..library.models import AudioAnnotation, Node, Token
+from ..library.models import AudioAnnotation, Node, TextAlignmentChunk, Token
 from ..library.utils import (
     extract_version_urn_and_ref,
     filter_alignments_by_textparts,
@@ -58,7 +58,13 @@ class AlignmentsShim(FolioShimBase):
         if fields is None:
             fields = ["idx", "items", "citation"]
         textparts_queryset = self.get_textparts_queryset()
-        alignments = filter_alignments_by_textparts(textparts_queryset).values(*fields)
+        # @@@ pin this WA to sentence alignment
+        chunk_queryset = TextAlignmentChunk.objects.filter(
+            alignment__slug="iliad-sentence-alignment"
+        )
+        alignments = filter_alignments_by_textparts(
+            textparts_queryset, chunk_queryset
+        ).values(*fields)
         return list(alignments)
 
 

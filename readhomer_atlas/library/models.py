@@ -21,6 +21,7 @@ class TextAlignment(models.Model):
     """
 
     name = models.CharField(blank=True, null=True, max_length=255)
+    # @@@ prefer a URN field too
     slug = models.SlugField()
 
     metadata = JSONField(default=dict, blank=True)
