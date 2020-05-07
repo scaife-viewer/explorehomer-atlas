@@ -180,7 +180,7 @@ class TranslationAlignmentGenerator(FolioBoundingBoxAnnotationMixin):
         cite_version_urn = "urn:cts:greekLit:tlg0012.tlg001.msA:"
         references = []
         # @@@ this is a giant hack, would be better to resolve the citation ref
-        for ref, _, _ in self.greek_lines:
+        for ref, _ in self.greek_lines:
             references.append(f"{cite_version_urn}{ref}")
         return references
 

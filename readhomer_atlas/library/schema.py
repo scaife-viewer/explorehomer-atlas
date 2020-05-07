@@ -13,12 +13,15 @@ from .models import (
     ImageAnnotation,
     NamedEntity,
     Node,
+    TextAlignment,
+    TextAlignmentChunk,
     TextAnnotation,
     Token,
 )
 from .urn import URN
 from .utils import (
     extract_version_urn_and_ref,
+    filter_alignments_by_textparts,
     filter_via_ref_predicate,
     get_chunker,
     get_textparts_from_passage_reference,
@@ -246,7 +249,7 @@ class AbstractTextPartNode(DjangoObjectType):
 
 
 class VersionNode(AbstractTextPartNode):
-    # text_alignment_chunks = LimitedConnectionField(lambda: TextAlignmentChunkNode)
+    text_alignment_chunks = LimitedConnectionField(lambda: TextAlignmentChunkNode)
 
     @classmethod
     def get_queryset(cls, queryset, info):
@@ -281,55 +284,40 @@ class TreeNode(ObjectType):
         return obj
 
 
-# class TextAlignmentNode(DjangoObjectType):
-#     metadata = generic.GenericScalar()
+class TextAlignmentNode(DjangoObjectType):
+    # @@@@ filter by the versions in a particular chunk
+    metadata = generic.GenericScalar()
 
-#     class Meta:
-#         model = TextAlignment
-#         interfaces = (relay.Node,)
-#         filter_fields = ["name", "slug"]
-
-
-# class TextAlignmentChunkFilterSet(
-#     TextPartsReferenceFilterMixin, django_filters.FilterSet
-# ):
-#     reference = django_filters.CharFilter(method="reference_filter")
-#     contains = django_filters.CharFilter(method="contains_reference_filter")
-
-#     class Meta:
-#         model = TextAlignmentChunk
-#         fields = [
-#             "start",
-#             "end",
-#             "version__urn",
-#             "idx",
-#         ]
-
-#     def reference_filter(self, queryset, name, value):
-#         textparts_queryset = self.get_lowest_textparts_queryset(value)
-#         return queryset.filter(
-#             Q(start__in=textparts_queryset) | Q(end__in=textparts_queryset)
-#         )
-
-#     def contains_reference_filter(self, queryset, name, value):
-#         textparts_queryset = self.get_lowest_textparts_queryset(value)
-#         start = textparts_queryset.first()
-#         end = textparts_queryset.last()
-#         version = self.request.passage["version"]
-#         return (
-#             queryset.filter(version=version)
-#             .filter(end__idx__gte=start.idx)
-#             .filter(start__idx__lte=end.idx)
-#         )
+    class Meta:
+        model = TextAlignment
+        interfaces = (relay.Node,)
+        filter_fields = ["name", "slug"]
 
 
-# class TextAlignmentChunkNode(DjangoObjectType):
-#     items = generic.GenericScalar()
+class TextAlignmentChunkFilterSet(
+    TextPartsReferenceFilterMixin, django_filters.FilterSet
+):
+    # @@@@ filter by the versions in a particular chunk
+    reference = django_filters.CharFilter(method="reference_filter")
 
-#     class Meta:
-#         model = TextAlignmentChunk
-#         interfaces = (relay.Node,)
-#         filterset_class = TextAlignmentChunkFilterSet
+    class Meta:
+        model = TextAlignmentChunk
+        fields = [
+            "idx",
+        ]
+
+    def reference_filter(self, queryset, name, value):
+        textparts_queryset = self.get_lowest_textparts_queryset(value)
+        return filter_alignments_by_textparts(textparts_queryset, queryset)
+
+
+class TextAlignmentChunkNode(DjangoObjectType):
+    items = generic.GenericScalar()
+
+    class Meta:
+        model = TextAlignmentChunk
+        interfaces = (relay.Node,)
+        filterset_class = TextAlignmentChunkFilterSet
 
 
 class TextAnnotationNode(DjangoObjectType):
@@ -391,8 +379,8 @@ class Query(ObjectType):
     # will only support querying by reference.
     passage_text_parts = LimitedConnectionField(PassageTextPartNode)
 
-    # text_alignment_chunk = relay.Node.Field(TextAlignmepython manage.py shellntChunkNode)
-    # text_alignment_chunks = LimitedConnectionField(TextAlignmentChunkNode)
+    text_alignment_chunk = relay.Node.Field(TextAlignmentChunkNode)
+    text_alignment_chunks = LimitedConnectionField(TextAlignmentChunkNode)
 
     text_annotation = relay.Node.Field(TextAnnotationNode)
     text_annotations = LimitedConnectionField(TextAnnotationNode)

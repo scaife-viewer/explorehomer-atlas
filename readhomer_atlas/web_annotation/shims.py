@@ -1,9 +1,9 @@
-from django.db.models import Q
 from django.utils.functional import cached_property
 
-from ..library.models import AudioAnnotation, Node, TextAlignmentChunk, Token
+from ..library.models import AudioAnnotation, Node, Token
 from ..library.utils import (
     extract_version_urn_and_ref,
+    filter_alignments_by_textparts,
     get_textparts_from_passage_reference,
 )
 from .utils import preferred_folio_urn
@@ -58,9 +58,7 @@ class AlignmentsShim(FolioShimBase):
         if fields is None:
             fields = ["idx", "items", "citation"]
         textparts_queryset = self.get_textparts_queryset()
-        alignments = TextAlignmentChunk.objects.filter(
-            Q(start__in=textparts_queryset) | Q(end__in=textparts_queryset)
-        ).values(*fields)
+        alignments = filter_alignments_by_textparts(textparts_queryset).values(*fields)
         return list(alignments)
 
 

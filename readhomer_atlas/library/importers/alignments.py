@@ -215,11 +215,40 @@ def sentence_alignment_fresh_start():
     relation_a.tokens.set(Token.objects.filter(text_part__in=text_parts))
 
     relation_b = TextAlignmentChunkRelation(
-        version=version_b, alignment_chunk=record, citation="1.1"
+        # @@@ citation is backwards incompatible with prior data
+        version=version_b,
+        alignment_chunk=record,
+        citation="1.1",
     )
     relation_b.save()
     text_parts = version_b.get_descendants().filter(kind="card")[0:1]
     relation_b.tokens.set(Token.objects.filter(text_part__in=text_parts)[0:63])
+
+    record.items = list(record.denorm_relations())
+    record.save()
+
+    alignment = TextAlignment.objects.first()
+    record = TextAlignmentChunk(citation="1.9-1.12", alignment=alignment, idx=3)
+    record.save()
+
+    relation_a = TextAlignmentChunkRelation(
+        version=version_a, alignment_chunk=record, citation="1.9-1.12"
+    )
+    relation_a.save()
+    text_parts = list(version_a.get_descendants().filter(kind="line")[8:12])
+    tokens = []
+    tokens += text_parts[0].tokens.filter(position__gte=5)
+    for text_part in text_parts[1:-1]:
+        tokens.extend(text_part.tokens.all())
+    tokens += text_parts[-1].tokens.filter(position=1)
+    relation_a.tokens.set(tokens)
+
+    relation_b = TextAlignmentChunkRelation(
+        version=version_b, alignment_chunk=record, citation="1.1"
+    )
+    relation_b.save()
+    text_parts = version_b.get_descendants().filter(kind="card")[0:1]
+    relation_b.tokens.set(Token.objects.filter(text_part__in=text_parts)[83:115])
 
     record.items = list(record.denorm_relations())
     record.save()
