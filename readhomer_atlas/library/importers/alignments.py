@@ -252,3 +252,33 @@ def sentence_alignment_fresh_start():
 
     record.items = list(record.denorm_relations())
     record.save()
+
+    version_a = Node.objects.get(urn="urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:")
+    version_b = Node.objects.get(urn="urn:cts:greekLit:tlg0012.tlg001.perseus-eng3:")
+    alignment = TextAlignment(name="Iliad Word Alignment", slug="iliad-word-alignment")
+    alignment.save()
+    alignment.versions.set([version_a, version_b])
+
+    record = TextAlignmentChunk(citation="1.1.2", alignment=alignment, idx=1)
+    record.save()
+
+    relation_a = TextAlignmentChunkRelation(
+        version=version_a, alignment_chunk=record, citation="1.1.2"
+    )
+    relation_a.save()
+    tokens = Token.objects.filter(
+        text_part__urn="urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1.1", position=2
+    )
+    relation_a.tokens.set(tokens)
+
+    relation_b = TextAlignmentChunkRelation(
+        # @@@ citation is backwards incompatible with prior data
+        version=version_b,
+        alignment_chunk=record,
+        citation="1.1.3",
+    )
+    relation_b.save()
+    tokens = Token.objects.filter(
+        text_part__urn="urn:cts:greekLit:tlg0012.tlg001.perseus-eng3:1.1", position=3
+    )
+    relation_b.tokens.set(tokens)
