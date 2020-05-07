@@ -15,6 +15,7 @@ from .models import (
     Node,
     TextAlignment,
     TextAlignmentChunk,
+    TextAlignmentChunkRelation,
     TextAnnotation,
     Token,
 )
@@ -318,6 +319,13 @@ class TextAlignmentChunkNode(DjangoObjectType):
         filterset_class = TextAlignmentChunkFilterSet
 
 
+class TextAlignmentChunkRelationNode(DjangoObjectType):
+    class Meta:
+        model = TextAlignmentChunkRelation
+        interfaces = (relay.Node,)
+        filter_fields = ["tokens__text_part__urn"]
+
+
 class TextAnnotationNode(DjangoObjectType):
     data = generic.GenericScalar()
 
@@ -379,6 +387,9 @@ class Query(ObjectType):
 
     text_alignment_chunk = relay.Node.Field(TextAlignmentChunkNode)
     text_alignment_chunks = LimitedConnectionField(TextAlignmentChunkNode)
+
+    alignment_chunk_relation = relay.Node.Field(TextAlignmentChunkRelationNode)
+    alignment_chunk_relations = LimitedConnectionField(TextAlignmentChunkRelationNode)
 
     text_annotation = relay.Node.Field(TextAnnotationNode)
     text_annotations = LimitedConnectionField(TextAnnotationNode)
