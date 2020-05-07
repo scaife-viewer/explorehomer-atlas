@@ -6,6 +6,7 @@ from graphene.types import generic
 from graphene_django import DjangoObjectType
 from graphene_django.filter import DjangoFilterConnectionField
 from graphene_django.utils import camelize
+
 # from .models import Node as TextPart
 from .models import (
     AudioAnnotation,

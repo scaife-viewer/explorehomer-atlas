@@ -45,9 +45,9 @@ class TextAlignmentChunk(models.Model):
     citation = models.CharField(max_length=13)
     # denormed from start / end
     # citation = models.CharField(max_length=13)
-    # items = JSONField(default=list, blank=True)
+    items = JSONField(default=list, blank=True)
     # metadata = JSONField(default=dict, blank=True)
-    # idx = models.IntegerField(help_text="0-based index")
+    idx = models.IntegerField(help_text="0-based index")
 
     # # @@@
     # version = models.ForeignKey(
@@ -79,6 +79,11 @@ class TextAlignmentChunk(models.Model):
     #         .filter(idx__lte=self.end.idx)
     #     )
 
+    def denorm_relations(self):
+        # @@@ nested generators
+        for relation in self.relations.all():
+            yield list(relation.denorm_tokens())
+
 
 class TextAlignmentChunkRelation(models.Model):
     version = models.ForeignKey("library.Node", on_delete=models.CASCADE)
@@ -91,6 +96,17 @@ class TextAlignmentChunkRelation(models.Model):
     tokens = models.ManyToManyField(
         "library.Token", related_name="alignment_chunk_relations"
     )
+
+    def denorm_tokens(self):
+        lookup = {}
+        # @@@ ve_ref
+        for token in self.tokens.all().select_related("text_part"):
+            ve_ref = f"{token.text_part.ref}.{token.position}"
+            ref, position = ve_ref.rsplit(".", maxsplit=1)
+            lookup.setdefault(ref, []).append(token.value)
+        # @@@ skip line continuations for now
+        for key, values in lookup.items():
+            yield [key, " ".join(values)]
 
 
 TEXT_ANNOTATION_KIND_SCHOLIA = "scholia"

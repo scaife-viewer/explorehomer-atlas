@@ -204,7 +204,7 @@ def sentence_alignment_fresh_start():
     alignment.save()
     alignment.versions.set([version_a, version_b])
 
-    record = TextAlignmentChunk(citation="1.1-1.7", alignment=alignment)
+    record = TextAlignmentChunk(citation="1.1-1.7", alignment=alignment, idx=0)
     record.save()
 
     relation_a = TextAlignmentChunkRelation(
@@ -220,3 +220,6 @@ def sentence_alignment_fresh_start():
     relation_b.save()
     text_parts = version_b.get_descendants().filter(kind="card")[0:1]
     relation_b.tokens.set(Token.objects.filter(text_part__in=text_parts)[0:63])
+
+    record.items = list(record.denorm_relations())
+    record.save()
