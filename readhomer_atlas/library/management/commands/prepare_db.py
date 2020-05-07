@@ -24,9 +24,6 @@ class Command(BaseCommand):
         self.stdout.write("--[Loading versions]--")
         importers.versions.import_versions(reset=True)
 
-        self.stdout.write("--[Loading alignments]--")
-        importers.alignments.import_alignments(reset=True)
-
         self.stdout.write("--[Loading text annotations]--")
         importers.text_annotations.import_text_annotations(reset=True)
 
@@ -41,3 +38,6 @@ class Command(BaseCommand):
 
         self.stdout.write("--[Loading named entity annotations]--")
         importers.named_entities.apply_named_entities(reset=True)
+
+        self.stdout.write("--[Loading alignments]--")
+        importers.alignments.import_alignments(reset=True)

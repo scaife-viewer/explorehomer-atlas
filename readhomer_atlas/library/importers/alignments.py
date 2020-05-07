@@ -4,6 +4,7 @@ import os
 import re
 
 from django.conf import settings
+from django.utils.text import slugify
 
 from ..models import (
     Node,
@@ -130,7 +131,6 @@ def _alignment_chunk_obj(version, line_lookup, alignment, milestone, milestone_i
     chunk_obj = TextAlignmentChunk(
         citation=milestone["citation"],
         idx=milestone_idx,
-        version=version,
         alignment=alignment,
         items=[milestone["greek_content"], milestone["english_content"]],
     )
@@ -161,19 +161,30 @@ def _build_line_lookup(version):
     return lookup
 
 
+def _build_token_lookup(version):
+    lookup = {}
+    for token in Token.objects.filter(
+        text_part__urn__startswith=version.urn
+    ).select_related("text_part"):
+        # @@@ ve_ref
+        ve_ref = f"{token.text_part.ref}.{token.position}"
+        lookup[ve_ref] = token
+    return lookup
+
+
 def _import_alignment(data):
     full_content_path = os.path.join(ALIGNMENTS_DATA_PATH, data["content_path"])
 
     milestones = get_alignment_milestones(full_content_path)
-    # the version urns in data need a trailing colon
-    version_urn = f'{data["version_urn"]}:'
-    version = Node.objects.get(urn=version_urn)
+    versions = Node.objects.filter(urn__in=data["version_urns"])
     alignment, _ = TextAlignment.objects.update_or_create(
-        version=version,
         name=data["metadata"]["name"],
+        slug=slugify(data["metadata"]["name"]),
         defaults=dict(metadata=data["metadata"]),
     )
+    alignment.versions.set(versions)
 
+    version = versions.get(urn=data["version_urns"][0])
     chunks_created = 0
     line_lookup = _build_line_lookup(version)
     to_create = []
@@ -186,6 +197,17 @@ def _import_alignment(data):
             chunks_created += 1
     created = len(TextAlignmentChunk.objects.bulk_create(to_create, batch_size=500))
     assert created == chunks_created
+
+    # @@@ stop-gap to maintain parity, dreadfully slow
+    # @@@ can we bulk set many to many ?
+    token_lookup = _build_token_lookup(version)
+    for chunk in alignment.text_alignment_chunks.all():
+        ref = chunk.citation.split("-")[0]
+        first_token = token_lookup[f"{ref}.1"]
+        relation = TextAlignmentChunkRelation.objects.create(
+            version=version, alignment_chunk=chunk, citation=chunk.citation,
+        )
+        relation.tokens.set([first_token])
 
 
 def import_alignments(reset=False):

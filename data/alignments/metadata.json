@@ -1,19 +1,23 @@
 {
   "alignments": [
     {
-      "version_urn": "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2",
+      "version_urns": [
+        "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:",
+        "urn:cts:greekLit:tlg0012.tlg001.perseus-eng3:"
+      ],
       "content_path": "tlg0012.tlg001.perseus-grc2_aligned_to_tlg0012.tlg001.perseus-eng3.csv",
       "metadata": {
-        "aligned_version_urn": "urn:cts:greekLit:tlg0012.tlg001.perseus-eng3",
-        "name": "Iliad (English)"
+        "name": "Iliad Sentence Alignment"
       }
     },
     {
-      "version_urn": "urn:cts:greekLit:tlg0012.tlg002.perseus-grc2",
+      "version_urns": [
+        "urn:cts:greekLit:tlg0012.tlg002.perseus-grc2:",
+        "urn:cts:greekLit:tlg0012.tlg002.perseus-eng3:"
+      ],
       "content_path": "tlg0012.tlg002.perseus-grc2_aligned_to_tlg0012.tlg002.perseus-eng3.csv",
       "metadata": {
-        "aligned_version_urn": "urn:cts:greekLit:tlg0012.tlg002.perseus-eng3",
-        "name": "Odyssey (English)"
+        "name": "Odyssey Sentence Alignment"
       }
     }
   ]
