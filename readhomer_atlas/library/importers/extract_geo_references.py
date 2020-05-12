@@ -1,7 +1,10 @@
 import csv
 import json
+import time
 
-from readhomer_atlas.library.models import Node
+import requests
+
+from readhomer_atlas.library.models import Node, Token
 
 
 def main():
@@ -110,10 +113,25 @@ def main():
                 pprint.pprint(entry["body"])
                 print("\n")
             else:
-                if len(unique_georefs) < 10:
-                    unique_georefs.append((entry, named_entity))
-                else:
-                    break
+                unique_georefs.append((entry, named_entity))
+    # hardcode the other pleiades uri
+    # Token.objects.filter(text_part__urn="urn:cts:greekLit:tlg0012.tlg001.perseus-eng4:2.720").filter(position__gte=15).filter(position__lte=17)
+    entry = by_id[
+        "https://recogito.pelagios.org/annotation/532c231a-7360-4d7a-b205-d4fdf3a424a7"
+    ]
+    unique_georefs.append(
+        (
+            entry,
+            [
+                (token.text_part.urn, token.position)
+                for token in Token.objects.filter(
+                    text_part__urn="urn:cts:greekLit:tlg0012.tlg001.perseus-eng4:2.720"
+                )
+                .filter(position__gte=15)
+                .filter(position__lte=17)
+            ],
+        )
+    )
 
     cite_block = """urn#label#description#pleiades#status#redirect
     urn:cite2:hmt:place.v1:place1#Athens#city in Attica#pleiades.stoa.org/places/579885#proposed#
@@ -573,11 +591,15 @@ def main():
     urn:cite2:hmt:place.v1:place457#Achelous#A river in Aetolia#https://pleiades.stoa.org/places/530768#proposed#
     urn:cite2:hmt:place.v1:place458#Acheloos#A river in Phrygia, alternatively spelled Acheles or Acheleios; NOT the one in Aetolia#https://pleiades.stoa.org/places/550400#proposed#"""
 
+    explore_homer_place_identifier = "urn:cite2:exploreHomer:place.v1:place"
+    place_id = 1
+
     reader = csv.DictReader(cite_block.splitlines(), delimiter="#")
     rows = [r for r in reader]
 
     named_entity_rows = []
     cite_urn_lookup = {}
+    url_to_urn_lookup = {}
     for entry, cts_urns in unique_georefs:
         pleiades_uri = None
         for body in entry["body"]:
@@ -598,9 +620,12 @@ def main():
         coordinates = None
         for body in entry["body"]:
             if body.get("purpose") == "georeferencing":
-                geometry = body["geometry"]
-                coords_str = ", ".join(str(c) for c in geometry["coordinates"])
-                coordinates = f"[coordinates={coords_str}]"
+                geometry = body.get("geometry")
+                if geometry:
+                    coords_str = ", ".join(str(c) for c in geometry["coordinates"])
+                    coordinates = f"[coordinates={coords_str}]"
+                else:
+                    coordinates = None
         description = [s for s in [coordinates, commenting, tagging] if s]
 
         if pleiades_uri:
@@ -608,7 +633,19 @@ def main():
                 iter(filter(lambda x: x["pleiades"] == pleiades_uri, rows)), None
             )
             if not cite_obj:
-                continue
+                cite_obj = url_to_urn_lookup.setdefault(pleiades_uri, {})
+                if not cite_obj:
+                    # cache requests
+                    data = requests.get(f"https://{pleiades_uri}/json").json()
+                    cite_obj.update(
+                        {
+                            "urn": f"{explore_homer_place_identifier}{place_id}",
+                            "data": data,
+                            "label": data["title"],
+                        }
+                    )
+                    place_id += 1
+                    time.sleep(0.1)
 
             cite_urn = cite_obj["urn"]
             named_entity_rows.append(
@@ -620,6 +657,27 @@ def main():
                 }
             )
             cite_urn_lookup[cite_urn] = cts_urns
+
+    json.dump(
+        url_to_urn_lookup,
+        open("data/annotations/named-entities/raw/new_places.json", "w"),
+        ensure_ascii=False,
+        indent=2,
+    )
+
+    out_file = "data/annotations/named-entities/processed/entities/raw/new_places.csv"
+    with open(out_file, "w", encoding="utf-8-sig") as f:
+        writer = csv.writer(f, delimiter="#")
+        for key, obj in url_to_urn_lookup.items():
+            writer.writerow(
+                [
+                    obj["urn"],
+                    obj["data"]["title"],
+                    obj["data"]["description"],
+                    key,
+                    "proposed",
+                ]
+            )
 
     out_file = "data/annotations/named-entities/processed/entities/chiara_subset.csv"
     with open(out_file, "w", encoding="utf-8-sig") as f:
