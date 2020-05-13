@@ -2,6 +2,7 @@ import csv
 import json
 import time
 
+import logfmt
 import requests
 
 from readhomer_atlas.library.models import Node, Token
@@ -601,32 +602,28 @@ def main():
     cite_urn_lookup = {}
     url_to_urn_lookup = {}
     for entry, cts_urns in unique_georefs:
+        extra = {}
         pleiades_uri = None
         for body in entry["body"]:
             if body.get("value").startswith("http://pleiades"):
                 pleiades_uri = body["value"].split("http://")[1]
                 break
 
-        tagging = None
         for body in entry["body"]:
             if body.get("purpose") == "tagging":
-                tagging = f'[tagging="{body["value"]}"]'
+                extra["tagging"] = body["value"]
 
-        commenting = None
         for body in entry["body"]:
             if body.get("purpose") == "commenting":
-                commenting = f'[commenting="{body["value"]}"]'
+                if "commenting" not in extra:
+                    extra["commenting"] = body["value"]
 
-        coordinates = None
         for body in entry["body"]:
             if body.get("purpose") == "georeferencing":
                 geometry = body.get("geometry")
                 if geometry:
                     coords_str = ", ".join(str(c) for c in geometry["coordinates"])
-                    coordinates = f"[coordinates={coords_str}]"
-                else:
-                    coordinates = None
-        description = [s for s in [coordinates, commenting, tagging] if s]
+                    extra["coordinates"] = coords_str
 
         if pleiades_uri:
             cite_obj = next(
@@ -651,8 +648,13 @@ def main():
             named_entity_rows.append(
                 {
                     "urn": cite_urn,
-                    "label": cite_obj["label"],
-                    "description": "\n".join(description),
+                    "label": cite_obj.get(
+                        "label", cite_obj.get("data", {}).get("title")
+                    ),
+                    "description": cite_obj.get(
+                        "description", cite_obj.get("data", {}).get("description")
+                    ),
+                    "data": next(logfmt.format(extra), ""),
                     "link": f"https://{pleiades_uri}",
                 }
             )
@@ -665,7 +667,7 @@ def main():
         indent=2,
     )
 
-    out_file = "data/annotations/named-entities/processed/entities/raw/new_places.csv"
+    out_file = "data/annotations/named-entities/raw/new_places.csv"
     with open(out_file, "w", encoding="utf-8-sig") as f:
         writer = csv.writer(f, delimiter="#")
         for key, obj in url_to_urn_lookup.items():

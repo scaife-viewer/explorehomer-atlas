@@ -3,6 +3,8 @@ import os
 
 from django.conf import settings
 
+import logfmt
+
 from ..models import NamedEntity, Node
 
 
@@ -27,6 +29,7 @@ def _populate_lookup(path, lookup):
         for row in reader:
             urn = row["urn"]
             kind = "person" if urn.count("pers") > 0 else "place"
+            data = next(logfmt.parse([row.get("data", "")]), dict())
             named_entity, _ = NamedEntity.objects.get_or_create(
                 urn=urn,
                 defaults={
@@ -34,6 +37,7 @@ def _populate_lookup(path, lookup):
                     "description": row["description"],
                     "url": row["link"],
                     "kind": kind,
+                    "data": data,
                 },
             )
             lookup[named_entity.urn] = named_entity
