@@ -399,6 +399,8 @@ class NamedEntityFilterSet(TextPartsReferenceFilterMixin, django_filters.FilterS
 
 
 class NamedEntityNode(DjangoObjectType):
+    data = generic.GenericScalar()
+
     class Meta:
         model = NamedEntity
         interfaces = (relay.Node,)
