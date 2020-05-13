@@ -420,6 +420,7 @@ class NamedEntity(models.Model):
     description = models.TextField(blank=True, null=True)
     kind = models.CharField(max_length=6, choices=constants.NAMED_ENTITY_KINDS)
     url = models.URLField(max_length=200)
+    data = JSONField(default=dict, blank=True)
 
     idx = models.IntegerField(help_text="0-based index", blank=True, null=True)
     urn = models.CharField(max_length=255, unique=True)
