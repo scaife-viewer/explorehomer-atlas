@@ -391,7 +391,7 @@ class NamedEntityFilterSet(TextPartsReferenceFilterMixin, django_filters.FilterS
 
     class Meta:
         model = NamedEntity
-        fields = ["urn"]
+        fields = ["urn", "kind"]
 
     def reference_filter(self, queryset, name, value):
         textparts_queryset = self.get_lowest_textparts_queryset(value)
