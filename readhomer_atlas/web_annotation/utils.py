@@ -10,6 +10,13 @@ def preferred_folio_urn(urn):
     return f"urn:cts:greekLit:tlg0012.tlg001.msA-folios:{ref}"
 
 
+def folio_exemplar_urn_to_site_urn(urn):
+    if not urn.startswith("urn:cts:greekLit:tlg0012.tlg001.msA-folios"):
+        return urn
+    _, ref = urn.rsplit(":", maxsplit=1)
+    return f"urn:cite2:hmt:msA.v1:{ref}"
+
+
 def as_zero_based(int_val):
     """
     https://www.w3.org/TR/annotation-model/#model-35
