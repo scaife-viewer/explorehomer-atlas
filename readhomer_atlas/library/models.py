@@ -299,8 +299,8 @@ class Node(MP_Node):
         return f"{self.kind}: {self.urn}"
 
     @property
-    def name(self):
-        return self.metadata.get("work_title")
+    def label(self):
+        return self.metadata.get("label", self.urn)
 
     @classmethod
     def dump_tree(cls, root=None, up_to=None, to_camel=True):

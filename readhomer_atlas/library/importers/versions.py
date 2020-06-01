@@ -83,8 +83,8 @@ class CTSImporter:
         self.nodes = nodes
         self.urn = URN(self.version_data["urn"].strip())
         self.work_urn = self.urn.up_to(self.urn.WORK)
-        self.name = get_first_value_for_language(
-            self.library.works[self.work_urn]["title"], "eng"
+        self.label = get_first_value_for_language(
+            version_data["label"], "eng"
         )
         self.citation_scheme = self.version_data["citation_scheme"]
         self.metadata = self.get_version_metadata()
@@ -142,7 +142,7 @@ class CTSImporter:
             # "pass through" via GraphQL vs
             # apply to particular node kinds in the heirarchy
             "citation_scheme": self.citation_scheme,
-            "work_title": self.name,
+            "label": self.label,
             "first_passage_urn": self.version_data["first_passage_urn"],
             "default_toc_urn": self.version_data.get("default_toc_urn"),
         }
@@ -256,7 +256,7 @@ class CTSImporter:
                 self.generate_branch(line)
 
         count = self.finalize()
-        print(f"{self.name}: {count} nodes.", file=sys.stderr)
+        print(f"{self.label}: {count} nodes.", file=sys.stderr)
 
 
 def resolve_library():
