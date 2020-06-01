@@ -346,6 +346,18 @@ class Node(MP_Node):
             index[path] = newobj
         return tree
 
+    def get_refpart_siblings(self, version):
+        """
+        Node.get_siblings assumes siblings at the same position in the Node
+        heirarchy.
+
+        Refpart siblings crosses over parent boundaries, e.g.
+        considers 1.611 and 2.1 as siblings.
+        """
+        if not self.rank:
+            return Node.objects.none()
+        return version.get_descendants().filter(rank=self.rank)
+
 
 class Token(models.Model):
     text_part = models.ForeignKey(

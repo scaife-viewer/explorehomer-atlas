@@ -68,7 +68,8 @@ def update_version_tokens(version, lookup, refs):
         update_if_not_set(token, data, fields_to_update)
         to_update.append(token)
 
-    Token.objects.bulk_update(to_update, fields=fields_to_update, batch_size=500)
+    if fields_to_update and to_update:
+        Token.objects.bulk_update(to_update, fields=fields_to_update, batch_size=500)
     return len(to_update)
 
 
