@@ -94,7 +94,7 @@ class PassageTextPartConnection(Connection):
         if obj and obj.get_parent() != version:
             ancestor_refparts = obj.ref.split(".")[:-1]
             for pos, part in enumerate(ancestor_refparts):
-                ancestor_ref = ".".join(ancestor_refparts[:pos + 1])
+                ancestor_ref = ".".join(ancestor_refparts[: pos + 1])
                 data.append(
                     {
                         # @@@ proper name for this is ref or position?
