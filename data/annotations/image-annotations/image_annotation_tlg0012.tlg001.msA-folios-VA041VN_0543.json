@@ -6,8 +6,8 @@
       "urn:cite2:hmt:vaimg.2017a.caption:": "Venetus A: Marcianus Graecus Z. 454 (= 822), folio 41, verso."
     },
     "urn": "urn:cite2:hmt:vaimg.2017a:VA041VN_0543",
-    "canvas_url": "https://rosetest.library.jhu.edu/rosademo/iiif3/homer/VA/41v/canvas",
-    "image_url": "https://image.library.jhu.edu/iiif/homer%2FVA%2F41v/full/full/0/default.jpg",
+    "canvas_url": "https://rosetest.library.jhu.edu/rosademo/iiif/homer/VA/VA041VN-0543/canvas",
+    "image_url": "https://image.library.jhu.edu/iiif/homer%2FVA%2FVA041VN-0543/full/full/0/default.jpg",
     "references": [
       "urn:cts:greekLit:tlg0012.tlg001.msA-folios:41v"
     ],
