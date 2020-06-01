@@ -291,6 +291,7 @@ class Node(MP_Node):
     ref = models.CharField(max_length=255, blank=True, null=True)
     rank = models.IntegerField(blank=True, null=True)
     text_content = models.TextField(blank=True, null=True)
+    # @@@ we may want to furthe de-norm label from metadata
     metadata = JSONField(default=dict, blank=True, null=True)
 
     alphabet = settings.NODE_ALPHABET
