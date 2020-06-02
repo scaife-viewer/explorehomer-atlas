@@ -83,9 +83,7 @@ class CTSImporter:
         self.nodes = nodes
         self.urn = URN(self.version_data["urn"].strip())
         self.work_urn = self.urn.up_to(self.urn.WORK)
-        self.label = get_first_value_for_language(
-            version_data["label"], "eng"
-        )
+        self.label = get_first_value_for_language(version_data["label"], "eng")
         self.citation_scheme = self.version_data["citation_scheme"]
         self.idx_lookup = defaultdict(int)
 
@@ -137,15 +135,11 @@ class CTSImporter:
 
     def get_textgroup_metadata(self, urn):
         metadata = self.library.text_groups[urn.up_to(URN.TEXTGROUP)]
-        return {
-            "label" : get_first_value_for_language(metadata["name"], "eng")
-        }
+        return {"label": get_first_value_for_language(metadata["name"], "eng")}
 
     def get_work_metadata(self, urn):
         metadata = self.library.works[urn.up_to(URN.WORK)]
-        return {
-            "label" : get_first_value_for_language(metadata["title"], "eng")
-        }
+        return {"label": get_first_value_for_language(metadata["title"], "eng")}
 
     def get_version_metadata(self):
         return {
