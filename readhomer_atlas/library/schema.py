@@ -354,6 +354,22 @@ class MetricalAnnotationNode(DjangoObjectType):
         filter_fields = ["urn"]
 
 
+class ImageAnnotationFilterSet(TextPartsReferenceFilterMixin, django_filters.FilterSet):
+    reference = django_filters.CharFilter(method="reference_filter")
+
+    class Meta:
+        model = ImageAnnotation
+        fields = ["urn"]
+
+    def reference_filter(self, queryset, name, value):
+        # Reference filters work at the lowest text parts, but we've chosen to
+        # apply the ImageAnnotation :: TextPart link at the folio level.
+
+        # Since individual lines are at the roi level, we query there.
+        textparts_queryset = self.get_lowest_textparts_queryset(value)
+        return queryset.filter(roi__text_parts__in=textparts_queryset).distinct()
+
+
 class ImageAnnotationNode(DjangoObjectType):
     text_parts = LimitedConnectionField(lambda: TextPartNode)
     data = generic.GenericScalar()
@@ -361,7 +377,7 @@ class ImageAnnotationNode(DjangoObjectType):
     class Meta:
         model = ImageAnnotation
         interfaces = (relay.Node,)
-        filter_fields = ["urn"]
+        filterset_class = ImageAnnotationFilterSet
 
 
 class AudioAnnotationNode(DjangoObjectType):
