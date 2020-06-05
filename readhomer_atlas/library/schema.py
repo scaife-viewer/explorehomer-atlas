@@ -335,13 +335,25 @@ class TextAlignmentChunkNode(DjangoObjectType):
         filterset_class = TextAlignmentChunkFilterSet
 
 
+class TextAnnotationFilterSet(TextPartsReferenceFilterMixin, django_filters.FilterSet):
+    reference = django_filters.CharFilter(method="reference_filter")
+
+    class Meta:
+        model = TextAnnotation
+        fields = ["urn"]
+
+    def reference_filter(self, queryset, name, value):
+        textparts_queryset = self.get_lowest_textparts_queryset(value)
+        return queryset.filter(text_parts__in=textparts_queryset).distinct()
+
+
 class TextAnnotationNode(DjangoObjectType):
     data = generic.GenericScalar()
 
     class Meta:
         model = TextAnnotation
         interfaces = (relay.Node,)
-        filter_fields = ["urn"]
+        filterset_class = TextAnnotationFilterSet
 
 
 class MetricalAnnotationNode(DjangoObjectType):
