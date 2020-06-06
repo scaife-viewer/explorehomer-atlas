@@ -83,11 +83,8 @@ class CTSImporter:
         self.nodes = nodes
         self.urn = URN(self.version_data["urn"].strip())
         self.work_urn = self.urn.up_to(self.urn.WORK)
-        self.name = get_first_value_for_language(
-            self.library.works[self.work_urn]["title"], "eng"
-        )
+        self.label = get_first_value_for_language(version_data["label"], "eng")
         self.citation_scheme = self.version_data["citation_scheme"]
-        self.metadata = self.get_version_metadata()
         self.idx_lookup = defaultdict(int)
 
         self.nodes_to_create = []
@@ -136,13 +133,21 @@ class CTSImporter:
     def get_urn_scheme(self, node_urn):
         return [*self.get_root_urn_scheme(node_urn), *self.citation_scheme]
 
+    def get_textgroup_metadata(self, urn):
+        metadata = self.library.text_groups[urn.up_to(URN.TEXTGROUP)]
+        return {"label": get_first_value_for_language(metadata["name"], "eng")}
+
+    def get_work_metadata(self, urn):
+        metadata = self.library.works[urn.up_to(URN.WORK)]
+        return {"label": get_first_value_for_language(metadata["title"], "eng")}
+
     def get_version_metadata(self):
         return {
             # @@@ how much of the `metadata.json` do we
             # "pass through" via GraphQL vs
             # apply to particular node kinds in the heirarchy
             "citation_scheme": self.citation_scheme,
-            "work_title": self.name,
+            "label": self.label,
             "first_passage_urn": self.version_data["first_passage_urn"],
             "default_toc_urn": self.version_data.get("default_toc_urn"),
         }
@@ -198,8 +203,12 @@ class CTSImporter:
 
             if kind not in self.citation_scheme:
                 data.update({"urn": self.get_partial_urn(kind, node_urn)})
-                if kind == "version":
-                    data.update({"metadata": self.metadata})
+                if kind == "textgroup":
+                    data.update({"metadata": self.get_textgroup_metadata(node_urn)})
+                elif kind == "work":
+                    data.update({"metadata": self.get_work_metadata(node_urn)})
+                elif kind == "version":
+                    data.update({"metadata": self.get_version_metadata()})
             else:
                 ref_index = self.citation_scheme.index(kind)
                 ref = ".".join(node_urn.passage_nodes[: ref_index + 1])
@@ -256,7 +265,7 @@ class CTSImporter:
                 self.generate_branch(line)
 
         count = self.finalize()
-        print(f"{self.name}: {count} nodes.", file=sys.stderr)
+        print(f"{self.label}: {count} nodes.", file=sys.stderr)
 
 
 def resolve_library():

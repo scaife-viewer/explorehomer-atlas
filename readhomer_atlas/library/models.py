@@ -291,6 +291,7 @@ class Node(MP_Node):
     ref = models.CharField(max_length=255, blank=True, null=True)
     rank = models.IntegerField(blank=True, null=True)
     text_content = models.TextField(blank=True, null=True)
+    # @@@ we may want to furthe de-norm label from metadata
     metadata = JSONField(default=dict, blank=True, null=True)
 
     alphabet = settings.NODE_ALPHABET
@@ -299,8 +300,8 @@ class Node(MP_Node):
         return f"{self.kind}: {self.urn}"
 
     @property
-    def name(self):
-        return self.metadata.get("work_title")
+    def label(self):
+        return self.metadata.get("label", self.urn)
 
     @classmethod
     def dump_tree(cls, root=None, up_to=None, to_camel=True):

@@ -46,7 +46,7 @@ def _get_library(urn):
                 "version_kind": "edition",
                 "first_passage_urn": f"{version_urn}1.1-1.5",
                 "citation_scheme": None,
-                "title": [{"lang": "eng", "value": "Some Title"}],
+                "label": [{"lang": "eng", "value": "Some Title"}],
                 "description": [{"lang": "eng", "value": "Some description."}],
             }
         },

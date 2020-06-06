@@ -55,7 +55,7 @@ VERSION_DATA = {
     "version_kind": "edition",
     "first_passage_urn": "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1.1-1.7",
     "citation_scheme": ["book", "line"],
-    "title": [{"lang": "eng", "value": "Iliad, Homeri Opera"}],
+    "label": [{"lang": "eng", "value": "Iliad, Homeri Opera"}],
     "description": [
         {
             "lang": "eng",
@@ -66,11 +66,10 @@ VERSION_DATA = {
 
 VERSION_METADATA = {
     "citation_scheme": ["book", "line"],
-    "work_title": "Iliad",
+    "label": "Iliad, Homeri Opera",
     "first_passage_urn": "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1.1-1.7",
     "default_toc_urn": None,
 }
-
 LIBRARY_DATA = {
     "text_groups": {
         "urn:cts:greekLit:tlg0012:": {
@@ -93,7 +92,7 @@ LIBRARY_DATA = {
                     "version_kind": "edition",
                     "first_passage_urn": "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1.1-1.7",
                     "citation_scheme": ["book", "line"],
-                    "title": [{"lang": "eng", "value": "Iliad, Homeri Opera"}],
+                    "label": [{"lang": "eng", "value": "Iliad, Homeri Opera"}],
                     "description": [
                         {
                             "lang": "eng",
@@ -108,7 +107,7 @@ LIBRARY_DATA = {
             "groupUrn": "urn:cts:greekLit:tlg0012:",
             "node_kind": "work",
             "lang": "grc",
-            "title": [{"lang": "eng", "value": "Odyssey"}],
+            "label": [{"lang": "eng", "value": "Odyssey"}],
             "versions": [
                 {
                     "urn": "urn:cts:greekLit:tlg0012.tlg002.perseus-grc2:",
@@ -116,7 +115,7 @@ LIBRARY_DATA = {
                     "version_kind": "edition",
                     "first_passage_urn": "urn:cts:greekLit:tlg0012.tlg002.perseus-grc2:1.1-1.10",
                     "citation_scheme": ["book", "line"],
-                    "title": [
+                    "label": [
                         {"lang": "eng", "value": "Odyssey, Loeb classical library"}
                     ],
                     "description": [
@@ -137,7 +136,7 @@ LIBRARY_DATA = {
             "version_kind": "edition",
             "first_passage_urn": "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1.1-1.7",
             "citation_scheme": ["book", "line"],
-            "title": [{"lang": "eng", "value": "Iliad, Homeri Opera"}],
+            "label": [{"lang": "eng", "value": "Iliad, Homeri Opera"}],
             "description": [
                 {
                     "lang": "eng",
@@ -152,7 +151,7 @@ LIBRARY_DATA = {
             "version_kind": "edition",
             "first_passage_urn": "urn:cts:greekLit:tlg0012.tlg002.perseus-grc2:1.1-1.10",
             "citation_scheme": ["book", "line"],
-            "title": [{"lang": "eng", "value": "Odyssey, Loeb classical library"}],
+            "label": [{"lang": "eng", "value": "Odyssey, Loeb classical library"}],
             "description": [
                 {
                     "lang": "eng",
