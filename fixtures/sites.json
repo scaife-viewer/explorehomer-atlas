@@ -4,15 +4,23 @@
         "model": "sites.site",
         "fields": {
             "domain": "localhost:8000",
-            "name": "example.com [localhost]"
+            "name": "Explore Homer ATLAS [localhost]"
         }
     },
     {
         "pk": 2,
         "model": "sites.site",
         "fields": {
-            "domain": "example.com",
-            "name": "example.com"
+            "domain": "explorehomer-atlas.scaife-viewer.org",
+            "name": "Explore Homer ATLAS"
+        }
+    },
+    {
+        "pk": 3,
+        "model": "sites.site",
+        "fields": {
+            "domain": "aniop-atlas-staging.eldarion.com",
+            "name": "AniOp ATLAS [staging]"
         }
     }
 ]

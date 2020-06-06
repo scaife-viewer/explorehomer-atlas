@@ -100,6 +100,22 @@ Retrieve text part by its URN.
 }
 ```
 
+Retrieve tokens via a text part URN:
+```
+{
+  tokens (textPart_Urn:"urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1.1") {
+    edges {
+      node {
+        value
+        uuid
+        idx
+        position
+      }
+    }
+  }
+}
+```
+
 Retrieve a passage by its URN along with relevant metadata.
 ```
 {
@@ -123,6 +139,28 @@ Retrieve lines within a book within a particular version.
       node {
         ref
         textContent
+      }
+    }
+  }
+}
+```
+
+Retrieve lines and tokens within a book within a particular version.
+```
+{
+  textParts(urn_Startswith: "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:2.", first: 5) {
+    edges {
+      node {
+        ref
+        textContent
+        tokens {
+          edges {
+            node {
+              value
+              idx
+            }
+          }
+        }
       }
     }
   }
@@ -181,6 +219,315 @@ level of `Version` nodes, maintaining the tree structure in the final payload.
 }
 ```
 
+## Annotations
+
+The annotations below are invoked by the `prepare_db` script.
+
+While developing new annotations or ingesting data in alternate formats,
+it can be helpful to run the annotation importer script in isolation
+from `prepare_db`:
+
+```python
+from readhomer_atlas import importers
+
+importers.text_annotations.import_text_annotations(reset=True)
+```
+
+### Text Alignments
+
+#### Sample Queries
+
+Get text alignment chunks for a given reference:
+```
+{
+  textAlignmentChunks(reference: "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1.8") {
+    edges {
+      cursor
+      node {
+        id
+        citation
+        items
+        alignment {
+          name
+        }
+      }
+    }
+  }
+}
+```
+
+Get a version annotated with text alignment chunks:
+```
+{
+  versions (urn:"urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:") {
+    edges {
+      node {
+        metadata,
+        textAlignmentChunks (first:2){
+          edges {
+            node {
+              citation
+            }
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+### Text Annotations
+
+#### Sample Queries
+
+Retrieve text annotations
+```
+{
+  textAnnotations(first: 10) {
+    edges {
+      node {
+        urn
+        data
+        textParts {
+          edges {
+            node {
+              urn
+              textContent
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+```
+Retrieve text annotations for a given passage
+```
+{
+  passageTextParts(reference:"urn:cts:greekLit:tlg0012.tlg001.msA:1.1") {
+    edges {
+      node {
+        urn
+        textAnnotations {
+          edges {
+            node {
+              urn
+              data
+            }
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+### Audio Annotations
+
+#### Sample Queries
+
+Retrieve audio annotations
+```
+{
+  audioAnnotations(first: 10) {
+    edges {
+      node {
+        urn
+        assetUrl
+        textParts {
+          edges {
+            node {
+              urn
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+```
+Retrieve audio annotations for a given passage
+```
+{
+  passageTextParts(reference: "urn:cts:greekLit:tlg0012.tlg001.msA:1.1") {
+    edges {
+      node {
+        urn
+        audioAnnotations {
+          edges {
+            node {
+              assetUrl
+            }
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+### Metrical Annotations
+
+#### Sample Queries
+
+Retrieve metrical annotations
+```
+{
+  metricalAnnotations(first: 10) {
+    edges {
+      node {
+        urn
+        metricalPattern
+        textParts {
+          edges {
+            node {
+              urn
+            }
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+Retrieve metrical annotations for a given passage
+```
+{
+  passageTextParts(reference: "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1.1-1.2") {
+    edges {
+      node {
+        urn
+        metricalAnnotations {
+          edges {
+            node {
+              metricalPattern
+            }
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+### Image Annotations
+
+#### Sample Queries
+Retrieve image annotation applied to folios
+```
+{
+  imageAnnotations(first: 10) {
+    edges {
+      node {
+        idx
+        data
+        urn
+        canvasIdentifier
+        textParts(kind: "folio") {
+          edges {
+            node {
+              urn
+            }
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+Retrieve text parts annotated with images
+```
+{
+  textParts(urn: "urn:cts:greekLit:tlg0012.tlg001.msA-folios:12r") {
+    edges {
+      node {
+        imageAnnotations {
+          edges {
+            node {
+              urn
+              kind
+              imageIdentifier
+            }
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+### Named Entities
+
+#### Sample Queries
+Retrieve named entities
+```
+{
+  namedEntities (first: 10) {
+    edges {
+      node {
+        urn
+        title
+        description
+        url
+        tokens {
+          edges {
+            node {
+              value
+              textPart {
+                urn
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+Retrieve named entities for text part tokens
+```
+{
+  tokens(textPart_Urn:"urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1.16") {
+    edges {
+      node {
+        value,
+        namedEntities {
+          edges {
+            node {
+              title
+              description
+              url
+            }
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+Retreive named entities given a passage reference
+```
+{
+  namedEntities(reference:"urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1.1-1.7") {
+    edges {
+      node {
+        id
+        title
+        description
+        url
+      }
+    }
+  }
+}
+```
+
+
 ## Tests
 
 Invoke tests via:
@@ -194,3 +541,4 @@ pytest
 PRs against `develop` will automatically be deployed to Heroku as a ["review app"](https://devcenter.heroku.com/articles/github-integration-review-apps) after tests pass on CircleCI.
 
 The review app for a PR will be deleted when the PR is closed / merged, or after 30 days after no new commits are added to an open PR.
+

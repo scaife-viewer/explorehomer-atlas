@@ -2,7 +2,7 @@ import copy
 
 import hypothesis
 
-from readhomer_atlas.library.importers import CTSImporter, Library
+from readhomer_atlas.library.importers.versions import CTSImporter, Library
 from readhomer_atlas.library.urn import URN
 from readhomer_atlas.tests.strategies import URNs
 
@@ -46,7 +46,7 @@ def _get_library(urn):
                 "version_kind": "edition",
                 "first_passage_urn": f"{version_urn}1.1-1.5",
                 "citation_scheme": None,
-                "title": [{"lang": "eng", "value": "Some Title"}],
+                "label": [{"lang": "eng", "value": "Some Title"}],
                 "description": [{"lang": "eng", "value": "Some description."}],
             }
         },
@@ -62,7 +62,7 @@ def test_destructure(urn):
     version_data = library.versions[urn.up_to(urn.VERSION)]
     version_data.update({"citation_scheme": scheme})
 
-    nodes = CTSImporter(library, version_data).destructure_node(urn, tokens)
+    nodes = CTSImporter(library, version_data).destructure_urn(urn, tokens)
 
     if urn.has_exemplar:
         assert len(nodes) - len(urn.passage_nodes) == 6

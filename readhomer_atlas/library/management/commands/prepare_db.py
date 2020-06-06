@@ -3,7 +3,7 @@ import os
 from django.core.management import call_command
 from django.core.management.base import BaseCommand
 
-from readhomer_atlas.library import importers
+from readhomer_atlas.library import importers, tokenizers
 
 
 class Command(BaseCommand):
@@ -22,4 +22,28 @@ class Command(BaseCommand):
         call_command("migrate")
 
         self.stdout.write("--[Loading versions]--")
-        importers.import_versions()
+        importers.versions.import_versions(reset=True)
+
+        self.stdout.write("--[Loading alignments]--")
+        importers.alignments.import_alignments(reset=True)
+
+        self.stdout.write("--[Loading text annotations]--")
+        importers.text_annotations.import_text_annotations(reset=True)
+
+        self.stdout.write("--[Loading metrical annotations]--")
+        importers.metrical_annotations.import_metrical_annotations(reset=True)
+
+        self.stdout.write("--[Loading image annotations]--")
+        importers.image_annotations.import_image_annotations(reset=True)
+
+        self.stdout.write("--[Loading audio annotations]--")
+        importers.audio_annotations.import_audio_annotations(reset=True)
+
+        self.stdout.write("--[Tokenizing versions/exemplars]--")
+        tokenizers.tokenize_all_text_parts(reset=True)
+
+        self.stdout.write("--[Loading token annotations]--")
+        importers.token_annotations.apply_token_annotations()
+
+        self.stdout.write("--[Loading named entity annotations]--")
+        importers.named_entities.apply_named_entities(reset=True)
