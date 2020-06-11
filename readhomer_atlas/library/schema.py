@@ -88,20 +88,20 @@ class PassageTextPartConnection(Connection):
         return f"{version.urn}{passage_ref}"
 
     def get_ancestor_metadata(self, version, obj):
-        # @@@ this is currently the "first" ancestor
-        # and we need to stop it at the version boundary for backwards
+        # @@@ we need to stop it at the version boundary for backwards
         # compatability with SV
         data = []
         if obj and obj.get_parent() != version:
-            ancestor_urn = obj.urn.rsplit(".", maxsplit=1)[0]
-            ancestor_ref = ancestor_urn.rsplit(":", maxsplit=1)[1]
-            data.append(
-                {
-                    # @@@ proper name for this is ref or position?
-                    "ref": ancestor_ref,
-                    "urn": ancestor_urn,
-                }
-            )
+            ancestor_refparts = obj.ref.split(".")[:-1]
+            for pos, part in enumerate(ancestor_refparts):
+                ancestor_ref = ".".join(ancestor_refparts[: pos + 1])
+                data.append(
+                    {
+                        # @@@ proper name for this is ref or position?
+                        "ref": ancestor_ref,
+                        "urn": f"{version.urn}{ancestor_ref}",
+                    }
+                )
         return data
 
     def get_sibling_metadata(self, version, all_queryset, start_idx, count):
@@ -152,7 +152,7 @@ class PassageTextPartConnection(Connection):
             end_obj = version.get_descendants().get(ref=last_ref)
 
         data = {}
-        siblings_qs = start_obj.get_siblings()
+        siblings_qs = start_obj.get_refpart_siblings(version)
         start_idx = start_obj.idx
         chunk_length = end_obj.idx - start_obj.idx + 1
         data["ancestors"] = self.get_ancestor_metadata(version, start_obj)
@@ -335,13 +335,25 @@ class TextAlignmentChunkNode(DjangoObjectType):
         filterset_class = TextAlignmentChunkFilterSet
 
 
+class TextAnnotationFilterSet(TextPartsReferenceFilterMixin, django_filters.FilterSet):
+    reference = django_filters.CharFilter(method="reference_filter")
+
+    class Meta:
+        model = TextAnnotation
+        fields = ["urn"]
+
+    def reference_filter(self, queryset, name, value):
+        textparts_queryset = self.get_lowest_textparts_queryset(value)
+        return queryset.filter(text_parts__in=textparts_queryset).distinct()
+
+
 class TextAnnotationNode(DjangoObjectType):
     data = generic.GenericScalar()
 
     class Meta:
         model = TextAnnotation
         interfaces = (relay.Node,)
-        filter_fields = ["urn"]
+        filterset_class = TextAnnotationFilterSet
 
 
 class MetricalAnnotationNode(DjangoObjectType):
@@ -354,6 +366,22 @@ class MetricalAnnotationNode(DjangoObjectType):
         filter_fields = ["urn"]
 
 
+class ImageAnnotationFilterSet(TextPartsReferenceFilterMixin, django_filters.FilterSet):
+    reference = django_filters.CharFilter(method="reference_filter")
+
+    class Meta:
+        model = ImageAnnotation
+        fields = ["urn"]
+
+    def reference_filter(self, queryset, name, value):
+        # Reference filters work at the lowest text parts, but we've chosen to
+        # apply the ImageAnnotation :: TextPart link at the folio level.
+
+        # Since individual lines are at the roi level, we query there.
+        textparts_queryset = self.get_lowest_textparts_queryset(value)
+        return queryset.filter(roi__text_parts__in=textparts_queryset).distinct()
+
+
 class ImageAnnotationNode(DjangoObjectType):
     text_parts = LimitedConnectionField(lambda: TextPartNode)
     data = generic.GenericScalar()
@@ -361,7 +389,7 @@ class ImageAnnotationNode(DjangoObjectType):
     class Meta:
         model = ImageAnnotation
         interfaces = (relay.Node,)
-        filter_fields = ["urn"]
+        filterset_class = ImageAnnotationFilterSet
 
 
 class AudioAnnotationNode(DjangoObjectType):
