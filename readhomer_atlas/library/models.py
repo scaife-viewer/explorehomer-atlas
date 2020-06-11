@@ -140,7 +140,7 @@ class MetricalAnnotation(models.Model):
     def generate_html(self):
         buffer = io.StringIO()
         print(
-            f'        <li class="line {self.foot_code}" id="line-{self.line_num}" data-meter="{self.foot_code}">',
+            f'        <div class="line {self.foot_code}" id="line-{self.line_num}" data-meter="{self.foot_code}">',
             file=buffer,
         )
         print(f"          <div>", end="", file=buffer)
@@ -173,7 +173,7 @@ class MetricalAnnotation(models.Model):
                 )
             print(f"</span>", end="", file=buffer)
         print(f"\n          </div>", file=buffer)
-        print(f"        </li>", file=buffer)
+        print(f"        </div>", file=buffer)
         buffer.seek(0)
         return buffer.read().strip()
 
