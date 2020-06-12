@@ -3,6 +3,8 @@ import os
 
 from django.conf import settings
 
+import logfmt
+
 from ..models import NamedEntity, Node
 
 
@@ -22,15 +24,20 @@ def get_entity_paths():
 
 
 def _populate_lookup(path, lookup):
-    with open(path) as f:
+    with open(path, encoding="utf-8-sig") as f:
         reader = csv.DictReader(f)
         for row in reader:
+            urn = row["urn"]
+            kind = "person" if urn.count("pers") > 0 else "place"
+            data = next(logfmt.parse([row.get("data", "")]), dict())
             named_entity, _ = NamedEntity.objects.get_or_create(
-                urn=row["urn"],
+                urn=urn,
                 defaults={
                     "title": row["label"],
                     "description": row["description"],
                     "url": row["link"],
+                    "kind": kind,
+                    "data": data,
                 },
             )
             lookup[named_entity.urn] = named_entity
@@ -45,7 +52,7 @@ def get_standoff_paths():
 
 
 def _apply_entities(path, lookup):
-    with open(path) as f:
+    with open(path, encoding="utf-8-sig") as f:
         reader = csv.DictReader(f)
         for row in reader:
             named_entity = lookup[row["named_entity_urn"]]
