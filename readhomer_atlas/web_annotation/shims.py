@@ -1,6 +1,7 @@
 from django.db.models import Q
 from django.utils.functional import cached_property
 
+from ..constants import NAMED_ENTITY_KIND_PLACE
 from ..library.models import AudioAnnotation, Node, TextAlignmentChunk, Token
 from ..library.utils import (
     extract_version_urn_and_ref,
@@ -76,7 +77,8 @@ class NamedEntitiesShim(FolioShimBase):
         ).prefetch_related("named_entities")
         for token in tokens:
             for named_entity in token.named_entities.all():
-                print(idx)
+                if named_entity.kind == NAMED_ENTITY_KIND_PLACE:
+                    continue
                 named_entities.append(
                     {"token": token, "named_entity_obj": named_entity, "idx": idx}
                 )
