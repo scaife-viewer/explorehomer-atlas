@@ -104,7 +104,7 @@ class PassageTextPartConnection(Connection):
                 )
         return data
 
-    def get_sibling_metadata(self, version, all_queryset, start_idx, count):
+    def get_adjacent_passages(self, version, all_queryset, start_idx, count):
         data = {}
 
         chunker = get_chunker(
@@ -155,10 +155,11 @@ class PassageTextPartConnection(Connection):
         siblings_qs = start_obj.get_refpart_siblings(version)
         start_idx = start_obj.idx
         chunk_length = end_obj.idx - start_obj.idx + 1
-        data["ancestors"] = self.get_ancestor_metadata(version, start_obj)
-        data["siblings"] = self.get_sibling_metadata(
-            version, siblings_qs, start_idx, chunk_length
+        data.update(
+            self.get_adjacent_passages(version, siblings_qs, start_idx, chunk_length)
         )
+
+        data["ancestors"] = self.get_ancestor_metadata(version, start_obj)
         data["children"] = self.get_children_metadata(start_obj)
         return camelize(data)
 
