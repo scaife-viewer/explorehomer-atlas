@@ -119,6 +119,20 @@ class PassageTextPartConnection(Connection):
             data["next"] = self.generate_passage_urn(version, next_objects)
         return data
 
+    def get_sibling_metadata(self, version, text_part):
+        text_part_siblings = text_part.get_siblings()
+        data = []
+        for tp in text_part_siblings.values("ref", "urn"):
+            lsb = tp["ref"].rsplit(".", maxsplit=1)[-1]
+            data.append(
+                {
+                    # @@@ proper name is lsb or position
+                    "lsb": lsb,
+                    "urn": tp.get("urn"),
+                }
+            )
+        return data
+
     def get_children_metadata(self, start_obj):
         data = []
         for tp in start_obj.get_children().values("ref", "urn"):
@@ -160,6 +174,7 @@ class PassageTextPartConnection(Connection):
         )
 
         data["ancestors"] = self.get_ancestor_metadata(version, start_obj)
+        data["siblings"] = self.get_sibling_metadata(version, start_obj)
         data["children"] = self.get_children_metadata(start_obj)
         return camelize(data)
 
