@@ -19,7 +19,6 @@ from .models import (
     TextAnnotation,
     Token,
 )
-from .urn import URN
 from .utils import (
     extract_version_urn_and_ref,
     filter_via_ref_predicate,
@@ -273,8 +272,20 @@ class VersionNode(AbstractTextPartNode):
 
     def resolve_metadata(obj, *args, **kwargs):
         metadata = obj.metadata
+        work = obj.get_parent()
+        text_group = work.get_parent()
+        # @@@ backport lang map
+        lang_map = {
+            "eng": "English",
+            "grc": "Greek",
+        }
         metadata.update(
-            {"work_urn": URN(metadata["first_passage_urn"]).up_to(URN.WORK)}
+            {
+                "work_label": work.label,
+                "text_group_label": text_group.label,
+                "lang": metadata["lang"],
+                "human_lang": lang_map[metadata["lang"]],
+            }
         )
         return camelize(metadata)
 
