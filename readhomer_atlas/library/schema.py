@@ -122,28 +122,18 @@ class PassageTextPartConnection(Connection):
         text_part_siblings = text_part.get_siblings()
         data = []
         for tp in text_part_siblings.values("ref", "urn"):
-            lsb = tp["ref"].rsplit(".", maxsplit=1)[-1]
-            data.append(
-                {
-                    # @@@ proper name is lsb or position
-                    "lsb": lsb,
-                    "urn": tp.get("urn"),
-                }
-            )
+            lcp = tp["ref"].split(".").pop()
+            data.append({"lcp": lcp, "urn": tp.get("urn")})
+        if len(data) == 1:
+            # don't return
+            data = []
         return data
 
     def get_children_metadata(self, start_obj):
         data = []
         for tp in start_obj.get_children().values("ref", "urn"):
-            # @@@ denorm lsb
-            lsb = tp["ref"].rsplit(".", maxsplit=1)[-1]
-            data.append(
-                {
-                    # @@@ proper name is lsb or position
-                    "lsb": lsb,
-                    "urn": tp.get("urn"),
-                }
-            )
+            lcp = tp["ref"].split(".").pop()
+            data.append({"lcp": lcp, "urn": tp.get("urn")})
         return data
 
     def resolve_metadata(self, info, *args, **kwargs):
