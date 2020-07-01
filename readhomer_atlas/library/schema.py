@@ -9,6 +9,7 @@ from graphene_django.utils import camelize
 
 # from .models import Node as TextPart
 from .models import (
+    TOC,
     AudioAnnotation,
     ImageAnnotation,
     MetricalAnnotation,
@@ -17,6 +18,7 @@ from .models import (
     TextAlignment,
     TextAlignmentChunk,
     TextAnnotation,
+    TOCEntry,
     Token,
 )
 from .utils import (
@@ -452,6 +454,28 @@ class NamedEntityNode(DjangoObjectType):
         filterset_class = NamedEntityFilterSet
 
 
+class TOCNode(DjangoObjectType):
+    title = String()
+    urn = String()
+
+    entries = LimitedConnectionField(lambda: TOCEntryNode)
+
+    class Meta:
+        model = TOC
+        interfaces = (relay.Node,)
+        filter_fields = ["title", "urn"]
+
+
+class TOCEntryNode(DjangoObjectType):
+    title = String()
+    uri = String()
+
+    class Meta:
+        model = TOCEntry
+        interfaces = (relay.Node,)
+        filter_fields = ["title", "uri"]
+
+
 class Query(ObjectType):
     version = relay.Node.Field(VersionNode)
     versions = LimitedConnectionField(VersionNode)
@@ -485,6 +509,12 @@ class Query(ObjectType):
 
     named_entity = relay.Node.Field(NamedEntityNode)
     named_entities = LimitedConnectionField(NamedEntityNode)
+
+    toc = relay.Node.Field(TOCNode)
+    tocs = LimitedConnectionField(TOCNode)
+
+    toc_entry = relay.Node.Field(TOCEntryNode)
+    toc_entries = LimitedConnectionField(TOCEntryNode)
 
     def resolve_tree(obj, info, urn, **kwargs):
         return TextPart.dump_tree(

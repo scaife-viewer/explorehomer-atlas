@@ -486,3 +486,17 @@ class NamedEntity(models.Model):
 
     def __str__(self):
         return f"{self.urn} :: {self.title }"
+
+
+class TOC(models.Model):
+    urn = models.CharField(max_length=255, unique=True)
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+
+
+class TOCEntry(models.Model):
+    toc = models.name = models.ForeignKey(
+        "library.TOC", related_name="entries", on_delete=models.CASCADE
+    )
+    title = models.CharField(max_length=255)
+    uri = models.CharField(max_length=255)

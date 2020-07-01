@@ -5,6 +5,7 @@ from . import (
     metrical_annotations,
     named_entities,
     text_annotations,
+    tocs,
     token_annotations,
     versions,
 )
@@ -17,6 +18,7 @@ __all__ = [
     "metrical_annotations",
     "named_entities",
     "text_annotations",
+    "tocs",
     "token_annotations",
     "versions",
 ]

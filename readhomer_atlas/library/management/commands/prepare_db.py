@@ -47,3 +47,6 @@ class Command(BaseCommand):
 
         self.stdout.write("--[Loading named entity annotations]--")
         importers.named_entities.apply_named_entities(reset=True)
+
+        self.stdout.write("--[Loading TOCs]--")
+        importers.tocs.create_tocs(reset=True)
