@@ -9,6 +9,7 @@ from graphene_django.utils import camelize
 
 # from .models import Node as TextPart
 from .models import (
+    TOC,
     AudioAnnotation,
     ImageAnnotation,
     MetricalAnnotation,
@@ -17,9 +18,9 @@ from .models import (
     TextAlignment,
     TextAlignmentChunk,
     TextAnnotation,
+    TOCEntry,
     Token,
 )
-from .urn import URN
 from .utils import (
     extract_version_urn_and_ref,
     filter_via_ref_predicate,
@@ -104,7 +105,7 @@ class PassageTextPartConnection(Connection):
                 )
         return data
 
-    def get_sibling_metadata(self, version, all_queryset, start_idx, count):
+    def get_adjacent_passages(self, version, all_queryset, start_idx, count):
         data = {}
 
         chunker = get_chunker(
@@ -119,18 +120,22 @@ class PassageTextPartConnection(Connection):
             data["next"] = self.generate_passage_urn(version, next_objects)
         return data
 
+    def get_sibling_metadata(self, version, text_part):
+        text_part_siblings = text_part.get_siblings()
+        data = []
+        for tp in text_part_siblings.values("ref", "urn"):
+            lcp = tp["ref"].split(".").pop()
+            data.append({"lcp": lcp, "urn": tp.get("urn")})
+        if len(data) == 1:
+            # don't return
+            data = []
+        return data
+
     def get_children_metadata(self, start_obj):
         data = []
         for tp in start_obj.get_children().values("ref", "urn"):
-            # @@@ denorm lsb
-            lsb = tp["ref"].rsplit(".", maxsplit=1)[-1]
-            data.append(
-                {
-                    # @@@ proper name is lsb or position
-                    "lsb": lsb,
-                    "urn": tp.get("urn"),
-                }
-            )
+            lcp = tp["ref"].split(".").pop()
+            data.append({"lcp": lcp, "urn": tp.get("urn")})
         return data
 
     def resolve_metadata(self, info, *args, **kwargs):
@@ -155,10 +160,12 @@ class PassageTextPartConnection(Connection):
         siblings_qs = start_obj.get_refpart_siblings(version)
         start_idx = start_obj.idx
         chunk_length = end_obj.idx - start_obj.idx + 1
-        data["ancestors"] = self.get_ancestor_metadata(version, start_obj)
-        data["siblings"] = self.get_sibling_metadata(
-            version, siblings_qs, start_idx, chunk_length
+        data.update(
+            self.get_adjacent_passages(version, siblings_qs, start_idx, chunk_length)
         )
+
+        data["ancestors"] = self.get_ancestor_metadata(version, start_obj)
+        data["siblings"] = self.get_sibling_metadata(version, start_obj)
         data["children"] = self.get_children_metadata(start_obj)
         return camelize(data)
 
@@ -257,8 +264,20 @@ class VersionNode(AbstractTextPartNode):
 
     def resolve_metadata(obj, *args, **kwargs):
         metadata = obj.metadata
+        work = obj.get_parent()
+        text_group = work.get_parent()
+        # @@@ backport lang map
+        lang_map = {
+            "eng": "English",
+            "grc": "Greek",
+        }
         metadata.update(
-            {"work_urn": URN(metadata["first_passage_urn"]).up_to(URN.WORK)}
+            {
+                "work_label": work.label,
+                "text_group_label": text_group.label,
+                "lang": metadata["lang"],
+                "human_lang": lang_map[metadata["lang"]],
+            }
         )
         return camelize(metadata)
 
@@ -435,6 +454,28 @@ class NamedEntityNode(DjangoObjectType):
         filterset_class = NamedEntityFilterSet
 
 
+class TOCNode(DjangoObjectType):
+    title = String()
+    urn = String()
+
+    entries = LimitedConnectionField(lambda: TOCEntryNode)
+
+    class Meta:
+        model = TOC
+        interfaces = (relay.Node,)
+        filter_fields = ["title", "urn"]
+
+
+class TOCEntryNode(DjangoObjectType):
+    title = String()
+    uri = String()
+
+    class Meta:
+        model = TOCEntry
+        interfaces = (relay.Node,)
+        filter_fields = ["title", "uri"]
+
+
 class Query(ObjectType):
     version = relay.Node.Field(VersionNode)
     versions = LimitedConnectionField(VersionNode)
@@ -468,6 +509,12 @@ class Query(ObjectType):
 
     named_entity = relay.Node.Field(NamedEntityNode)
     named_entities = LimitedConnectionField(NamedEntityNode)
+
+    toc = relay.Node.Field(TOCNode)
+    tocs = LimitedConnectionField(TOCNode)
+
+    toc_entry = relay.Node.Field(TOCEntryNode)
+    toc_entries = LimitedConnectionField(TOCEntryNode)
 
     def resolve_tree(obj, info, urn, **kwargs):
         return TextPart.dump_tree(

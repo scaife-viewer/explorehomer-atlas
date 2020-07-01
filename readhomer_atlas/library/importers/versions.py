@@ -148,6 +148,7 @@ class CTSImporter:
             # apply to particular node kinds in the heirarchy
             "citation_scheme": self.citation_scheme,
             "label": self.label,
+            "lang": self.version_data["lang"],
             "first_passage_urn": self.version_data["first_passage_urn"],
             "default_toc_urn": self.version_data.get("default_toc_urn"),
         }

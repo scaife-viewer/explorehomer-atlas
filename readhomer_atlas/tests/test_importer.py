@@ -149,6 +149,7 @@ def test_importer(mock_node, mock_generate, mock_open):
                 "metadata": {
                     "citation_scheme": ["book", "line"],
                     "label": "Iliad, Homeri Opera",
+                    "lang": "grc",
                     "first_passage_urn": "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1.1-1.7",
                     "default_toc_urn": None,
                 },
@@ -304,6 +305,7 @@ def test_importer_with_exemplar(mock_node, mock_generate, mock_open):
                 "metadata": {
                     "citation_scheme": ["book", "line"],
                     "label": "Iliad, Homeri Opera",
+                    "lang": "grc",
                     "first_passage_urn": "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1.1-1.7",
                     "default_toc_urn": None,
                 },

@@ -14,6 +14,7 @@
       "urn": "urn:cts:greekLit:tlg0012.tlg002.perseus-grc2:",
       "node_kind": "version",
       "version_kind": "edition",
+      "lang": "grc",
       "first_passage_urn": "urn:cts:greekLit:tlg0012.tlg002.perseus-grc2:1.1-1.10",
       "citation_scheme": ["book", "line"],
       "label": [
@@ -34,6 +35,7 @@
       "format": "cex",
       "node_kind": "version",
       "version_kind": "edition",
+      "lang": "eng",
       "first_passage_urn": "urn:cts:greekLit:tlg0012.tlg002.perseus-eng3:1.1-1.178",
       "citation_scheme": ["book", "card"],
       "label": [
@@ -54,6 +56,7 @@
       "format": "cex",
       "node_kind": "version",
       "version_kind": "edition",
+      "lang": "eng",
       "first_passage_urn": "urn:cts:greekLit:tlg0012.tlg002.perseus-eng4:1.1-1.230",
       "citation_scheme": ["book", "card"],
       "label": [
