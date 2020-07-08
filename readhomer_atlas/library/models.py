@@ -303,6 +303,26 @@ class Node(MP_Node):
     def label(self):
         return self.metadata.get("label", self.urn)
 
+    @property
+    def lsb(self):
+        """
+        An alias for lowest citation part, preserved for
+        backwards-comptability with scaife-viewer/scaife-viewer
+        https://github.com/scaife-viewer/scaife-viewer/blob/e6974b2835918741acca781c39f46fd79d5406c9/scaife_viewer/cts/passage.py#L58
+        """
+        return self.lowest_citabale_part
+
+    @property
+    def lowest_citable_part(self):
+        """
+        Returns the lowest part of the URN's citation
+
+        # @@@ may denorm this for performance
+        """
+        if not self.rank:
+            return None
+        return self.ref.split(".").pop()
+
     @classmethod
     def dump_tree(cls, root=None, up_to=None, to_camel=True):
         """Dump a tree or subtree for serialization rendering all
