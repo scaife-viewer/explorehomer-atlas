@@ -53,6 +53,7 @@ VERSION_DATA = {
     "urn": "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:",
     "node_kind": "version",
     "version_kind": "edition",
+    "lang": "grc",
     "first_passage_urn": "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1.1-1.7",
     "citation_scheme": ["book", "line"],
     "label": [{"lang": "eng", "value": "Iliad, Homeri Opera"}],
@@ -67,6 +68,7 @@ VERSION_DATA = {
 VERSION_METADATA = {
     "citation_scheme": ["book", "line"],
     "label": "Iliad, Homeri Opera",
+    "lang": "grc",
     "first_passage_urn": "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1.1-1.7",
     "default_toc_urn": None,
 }
@@ -90,6 +92,7 @@ LIBRARY_DATA = {
                     "urn": "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:",
                     "node_kind": "version",
                     "version_kind": "edition",
+                    "lang": "grc",
                     "first_passage_urn": "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1.1-1.7",
                     "citation_scheme": ["book", "line"],
                     "label": [{"lang": "eng", "value": "Iliad, Homeri Opera"}],
@@ -113,6 +116,7 @@ LIBRARY_DATA = {
                     "urn": "urn:cts:greekLit:tlg0012.tlg002.perseus-grc2:",
                     "node_kind": "version",
                     "version_kind": "edition",
+                    "lang": "grc",
                     "first_passage_urn": "urn:cts:greekLit:tlg0012.tlg002.perseus-grc2:1.1-1.10",
                     "citation_scheme": ["book", "line"],
                     "label": [
@@ -134,6 +138,7 @@ LIBRARY_DATA = {
             "urn": "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:",
             "node_kind": "version",
             "version_kind": "edition",
+            "lang": "grc",
             "first_passage_urn": "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1.1-1.7",
             "citation_scheme": ["book", "line"],
             "label": [{"lang": "eng", "value": "Iliad, Homeri Opera"}],
@@ -149,6 +154,7 @@ LIBRARY_DATA = {
             "urn": "urn:cts:greekLit:tlg0012.tlg002.perseus-grc2:",
             "node_kind": "version",
             "version_kind": "edition",
+            "lang": "grc",
             "first_passage_urn": "urn:cts:greekLit:tlg0012.tlg002.perseus-grc2:1.1-1.10",
             "citation_scheme": ["book", "line"],
             "label": [{"lang": "eng", "value": "Odyssey, Loeb classical library"}],
