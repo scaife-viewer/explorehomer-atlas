@@ -1,5 +1,8 @@
 import os
 
+import sentry_sdk
+from sentry_sdk.integrations.django import DjangoIntegration
+
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 PACKAGE_ROOT = os.path.abspath(os.path.dirname(__file__))
@@ -190,3 +193,8 @@ DEFAULT_HTTP_CACHE_DURATION = int(
     os.environ.get("DEFAULT_HTTP_CACHE_DURATION", 60 * 60)
 )
 DEFAULT_HTTP_PROTOCOL = os.environ.get("DEFAULT_HTTP_PROTOCOL", "http")
+
+SENTRY_TRACES_SAMPLE_RATE = float(os.environ.get("SENTRY_TRACES_SAMPLE_RATE", "0"))
+sentry_sdk.init(
+    integrations=[DjangoIntegration()], traces_sample_rate=SENTRY_TRACES_SAMPLE_RATE
+)
