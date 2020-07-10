@@ -194,5 +194,7 @@ DEFAULT_HTTP_CACHE_DURATION = int(
 )
 DEFAULT_HTTP_PROTOCOL = os.environ.get("DEFAULT_HTTP_PROTOCOL", "http")
 
-
-sentry_sdk.init(integrations=[DjangoIntegration()],)
+SENTRY_TRACES_SAMPLE_RATE = float(os.environ.get("SENTRY_TRACES_SAMPLE_RATE", "0"))
+sentry_sdk.init(
+    integrations=[DjangoIntegration()], traces_sample_rate=SENTRY_TRACES_SAMPLE_RATE
+)
