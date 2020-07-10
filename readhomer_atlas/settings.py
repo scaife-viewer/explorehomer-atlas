@@ -196,5 +196,7 @@ DEFAULT_HTTP_PROTOCOL = os.environ.get("DEFAULT_HTTP_PROTOCOL", "http")
 
 SENTRY_TRACES_SAMPLE_RATE = float(os.environ.get("SENTRY_TRACES_SAMPLE_RATE", "0"))
 sentry_sdk.init(
-    integrations=[DjangoIntegration()], traces_sample_rate=SENTRY_TRACES_SAMPLE_RATE
+    integrations=[DjangoIntegration()],
+    traces_sample_rate=SENTRY_TRACES_SAMPLE_RATE,
+    _experiments={"auto_enabling_integrations": True},
 )
