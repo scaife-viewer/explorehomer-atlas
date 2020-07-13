@@ -8,6 +8,7 @@ from graphene_django.filter import DjangoFilterConnectionField
 from graphene_django.utils import camelize
 
 # from .models import Node as TextPart
+from .loaders import TokenLoader, NamedEntityLoader
 from .models import (
     AudioAnnotation,
     ImageAnnotation,
@@ -286,12 +287,18 @@ class TextPartNode(AbstractTextPartNode):
 
 class PassageTextPartNode(DjangoObjectType):
     label = String()
+    tokens = LimitedConnectionField(lambda: TokenNode, )
 
     class Meta:
         model = TextPart
         interfaces = (relay.Node,)
         connection_class = PassageTextPartConnection
         filterset_class = PassageTextPartFilterSet
+
+    @staticmethod
+    def resolve_tokens(root, info, **kwargs):
+        context = info.context
+        return TokenLoader(context).load(root.id)
 
 
 class TreeNode(ObjectType):
@@ -425,10 +432,17 @@ class TokenFilterSet(django_filters.FilterSet):
 
 
 class TokenNode(DjangoObjectType):
+    named_entities = LimitedConnectionField(lambda: NamedEntityNode)
+
     class Meta:
         model = Token
         interfaces = (relay.Node,)
         filterset_class = TokenFilterSet
+
+    @staticmethod
+    def resolve_named_entities(root, info, **kwargs):
+        context = info.context
+        return NamedEntityLoader(context).load(root.id)
 
 
 class NamedEntityFilterSet(TextPartsReferenceFilterMixin, django_filters.FilterSet):
