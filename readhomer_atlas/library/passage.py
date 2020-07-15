@@ -43,3 +43,58 @@ class Passage:
         if end_fragment:
             return " to ".join([start_fragment, end_fragment])
         return start_fragment
+
+
+class PassageSiblingMetadata:
+    def __init__(self, passage, previous_objects=None, next_objects=None):
+        self.passage = passage
+        self.previous_objects = previous_objects
+        self.next_objects = next_objects
+
+    @staticmethod
+    def get_siblings_in_range(siblings, start, end, field_name="idx"):
+        for sibling in siblings:
+            if sibling[field_name] >= start and sibling[field_name] <= end:
+                yield sibling
+
+    @property
+    def all(self):
+        text_part_siblings = self.passage.start.get_siblings()
+        data = []
+        for tp in text_part_siblings.values("ref", "urn", "idx"):
+            lcp = tp["ref"].split(".").pop()
+            data.append({"lcp": lcp, "urn": tp.get("urn"), "idx": tp["idx"]})
+        if len(data) == 1:
+            # don't return
+            data = []
+        return data
+
+    @property
+    def selected(self):
+        return list(
+            self.get_siblings_in_range(
+                self.all, self.passage.start.idx, self.passage.end.idx
+            )
+        )
+
+    @property
+    def previous(self):
+        if self.previous_objects:
+            return list(
+                self.get_siblings_in_range(
+                    self.all,
+                    self.previous_objects[0]["idx"],
+                    self.previous_objects[-1]["idx"],
+                )
+            )
+        return []
+
+    @property
+    def next(self):
+        if self.next_objects:
+            return list(
+                self.get_siblings_in_range(
+                    self.all, self.next_objects[0]["idx"], self.next_objects[-1]["idx"],
+                )
+            )
+        return []

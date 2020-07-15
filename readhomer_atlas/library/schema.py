@@ -19,7 +19,7 @@ from .models import (
     TextAnnotation,
     Token,
 )
-from .passage import Passage
+from .passage import Passage, PassageSiblingMetadata
 from .utils import (
     extract_version_urn_and_ref,
     filter_via_ref_predicate,
@@ -70,8 +70,29 @@ class LimitedConnectionField(DjangoFilterConnectionField):
         )
 
 
+class PassageSiblingMetadataNode(ObjectType):
+    # @@@ dry for resolving scalars
+    all_siblings = generic.GenericScalar(name="all")
+    selected = generic.GenericScalar()
+    previous = generic.GenericScalar()
+    next_siblings = generic.GenericScalar(name="next")
+
+    def resolve_all_siblings(obj, info, **kwargs):
+        return obj.all
+
+    def resolve_selected(obj, info, **kwargs):
+        return obj.selected
+
+    def resolve_previous(obj, info, **kwargs):
+        return obj.previous
+
+    def resolve_next_siblings(obj, info, **kwargs):
+        return obj.next
+
+
 class PassageTextPartConnection(Connection):
     metadata = generic.GenericScalar()
+    sibling_metadata = Field(PassageSiblingMetadataNode)
 
     class Meta:
         abstract = True
@@ -119,23 +140,6 @@ class PassageTextPartConnection(Connection):
             data["next"] = self.generate_passage_urn(version, next_objects)
         return data
 
-    @staticmethod
-    def get_siblings_in_range(siblings, start, end, field_name="idx"):
-        for sibling in siblings:
-            if sibling[field_name] >= start and sibling[field_name] <= end:
-                yield sibling
-
-    def get_sibling_metadata(self, version, text_part, end_text_part):
-        text_part_siblings = text_part.get_siblings()
-        data = []
-        for tp in text_part_siblings.values("ref", "urn", "idx"):
-            lcp = tp["ref"].split(".").pop()
-            data.append({"lcp": lcp, "urn": tp.get("urn"), "idx": tp["idx"]})
-        if len(data) == 1:
-            # don't return
-            data = []
-        return data
-
     def get_children_metadata(self, start_obj):
         data = []
         for tp in start_obj.get_children().values("ref", "urn"):
@@ -172,37 +176,45 @@ class PassageTextPartConnection(Connection):
 
         data.update(self.get_adjacent_passages(version, previous_objects, next_objects))
 
-        data["ancestors"] = self.get_ancestor_metadata(version, start_obj)
-
-        # @@@ consider siblings_metadata key for computational efficency
-        text_part_siblings = self.get_sibling_metadata(version, start_obj, end_obj)
-        selected_siblings = self.get_siblings_in_range(
-            text_part_siblings, start_obj.idx, end_obj.idx
-        )
-        data["siblings"] = text_part_siblings
-        data["selected_siblings"] = self.get_siblings_in_range(
-            text_part_siblings, start_obj.idx, end_obj.idx
-        )
-
-        # @@@ DDN for previous / next siblings; sort of like GetPassagePlus from CapiTainS
-        # Not sure yet if we want this bundled or in its own endpoint
-        if previous_objects:
-            data["previous_siblings"] = self.get_siblings_in_range(
-                text_part_siblings,
-                previous_objects[0]["idx"],
-                previous_objects[-1]["idx"],
-            )
-        if next_objects:
-            data["next_siblings"] = self.get_siblings_in_range(
-                text_part_siblings, next_objects[0]["idx"], next_objects[-1]["idx"]
-            )
-
-        data["children"] = self.get_children_metadata(start_obj)
-
         passage = Passage(start_obj, end_obj)
         data["human_reference"] = passage.human_readable_reference
 
+        data["ancestors"] = self.get_ancestor_metadata(version, start_obj)
+
+        data["siblings"] = PassageSiblingMetadata(passage).all
+
+        data["children"] = self.get_children_metadata(start_obj)
+
         return camelize(data)
+
+    def resolve_sibling_metadata(self, info, *args, **kwargs):
+        # @@@ refactor with resolve_metadata
+
+        # @@@ resolve metadata.siblings|ancestors|children individually
+        passage_dict = info.context.passage
+        if not passage_dict:
+            return
+
+        urn = passage_dict["urn"]
+        version = passage_dict["version"]
+
+        refs = urn.rsplit(":", maxsplit=1)[1].split("-")
+        first_ref = refs[0]
+        last_ref = refs[-1]
+        if first_ref == last_ref:
+            start_obj = end_obj = version.get_descendants().get(ref=first_ref)
+        else:
+            start_obj = version.get_descendants().get(ref=first_ref)
+            end_obj = version.get_descendants().get(ref=last_ref)
+        passage = Passage(start_obj, end_obj)
+
+        siblings_qs = start_obj.get_refpart_siblings(version)
+        start_idx = start_obj.idx
+        chunk_length = end_obj.idx - start_obj.idx + 1
+        previous_objects, next_objects = self.get_adjacent_text_parts(
+            siblings_qs, start_idx, chunk_length
+        )
+        return PassageSiblingMetadata(passage, previous_objects, next_objects)
 
 
 # @@@ consider refactoring with TextPartsReferenceFilterMixin
