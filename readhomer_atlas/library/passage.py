@@ -169,3 +169,52 @@ class PassageSiblingMetadata:
                 )
             )
         return []
+
+
+class PassageMetadata:
+    def __init__(self, passage):
+        self.passage = passage
+
+    @staticmethod
+    def generate_passage_urn(version, object_list):
+        first = object_list[0]
+        last = object_list[-1]
+
+        if first == last:
+            return first.get("urn")
+        line_refs = [tp.get("ref") for tp in [first, last]]
+        passage_ref = "-".join(line_refs)
+        return f"{version.urn}{passage_ref}"
+
+    def get_ancestor_metadata(self, version, obj):
+        # @@@ we need to stop it at the version boundary for backwards
+        # compatability with SV
+        data = []
+        if obj and obj.get_parent() != version:
+            ancestor_refparts = obj.ref.split(".")[:-1]
+            for pos, part in enumerate(ancestor_refparts):
+                ancestor_ref = ".".join(ancestor_refparts[: pos + 1])
+                data.append(
+                    {
+                        # @@@ proper name for this is ref or position?
+                        "ref": ancestor_ref,
+                        "urn": f"{version.urn}{ancestor_ref}",
+                    }
+                )
+        return data
+
+    def get_adjacent_passages(self, version, previous_objects, next_objects):
+        data = {}
+        if previous_objects:
+            data["previous"] = self.generate_passage_urn(version, previous_objects)
+
+        if next_objects:
+            data["next"] = self.generate_passage_urn(version, next_objects)
+        return data
+
+    def get_children_metadata(self, start_obj):
+        data = []
+        for tp in start_obj.get_children().values("ref", "urn"):
+            lcp = tp["ref"].split(".").pop()
+            data.append({"lcp": lcp, "urn": tp.get("urn")})
+        return data

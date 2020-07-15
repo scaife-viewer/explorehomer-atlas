@@ -19,7 +19,7 @@ from .models import (
     TextAnnotation,
     Token,
 )
-from .passage import Passage, PassageSiblingMetadata
+from .passage import Passage, PassageMetadata, PassageSiblingMetadata
 from .utils import (
     extract_version_urn_and_ref,
     filter_via_ref_predicate,
@@ -98,62 +98,13 @@ class PassageSiblingsNode(ObjectType):
         return obj.next
 
 
-class PassageTextPartConnection(Connection):
-    metadata = generic.GenericScalar()
-
+class PassageMetadataNode(ObjectType):
     human_reference = String()
     ancestors = generic.GenericScalar()
     siblings = Field(PassageSiblingsNode)
     children = generic.GenericScalar()
     next_passage = String(description="Next passage reference")
     previous_passage = String(description="Previous passage reference")
-
-    class Meta:
-        abstract = True
-
-    @staticmethod
-    def generate_passage_urn(version, object_list):
-        first = object_list[0]
-        last = object_list[-1]
-
-        if first == last:
-            return first.get("urn")
-        line_refs = [tp.get("ref") for tp in [first, last]]
-        passage_ref = "-".join(line_refs)
-        return f"{version.urn}{passage_ref}"
-
-    def get_ancestor_metadata(self, version, obj):
-        # @@@ we need to stop it at the version boundary for backwards
-        # compatability with SV
-        data = []
-        if obj and obj.get_parent() != version:
-            ancestor_refparts = obj.ref.split(".")[:-1]
-            for pos, part in enumerate(ancestor_refparts):
-                ancestor_ref = ".".join(ancestor_refparts[: pos + 1])
-                data.append(
-                    {
-                        # @@@ proper name for this is ref or position?
-                        "ref": ancestor_ref,
-                        "urn": f"{version.urn}{ancestor_ref}",
-                    }
-                )
-        return data
-
-    def get_adjacent_passages(self, version, previous_objects, next_objects):
-        data = {}
-        if previous_objects:
-            data["previous"] = self.generate_passage_urn(version, previous_objects)
-
-        if next_objects:
-            data["next"] = self.generate_passage_urn(version, next_objects)
-        return data
-
-    def get_children_metadata(self, start_obj):
-        data = []
-        for tp in start_obj.get_children().values("ref", "urn"):
-            lcp = tp["ref"].split(".").pop()
-            data.append({"lcp": lcp, "urn": tp.get("urn")})
-        return data
 
     def resolve_metadata(self, info, *args, **kwargs):
         # @@@
@@ -184,6 +135,17 @@ class PassageTextPartConnection(Connection):
     def resolve_human_reference(self, info, *args, **kwargs):
         passage = info.context.passage
         return passage.human_readable_reference
+
+
+class PassageTextPartConnection(Connection):
+    metadata = Field(PassageMetadataNode)
+
+    class Meta:
+        abstract = True
+
+    def resolve_metadata(self, info, *args, **kwargs):
+        passage = info.context.passage
+        return PassageMetadata(passage)
 
 
 # @@@ consider refactoring with TextPartsReferenceFilterMixin
