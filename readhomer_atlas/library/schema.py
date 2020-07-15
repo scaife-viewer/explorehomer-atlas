@@ -19,6 +19,7 @@ from .models import (
     TextAnnotation,
     Token,
 )
+from .passage import Passage
 from .utils import (
     extract_version_urn_and_ref,
     filter_via_ref_predicate,
@@ -197,6 +198,10 @@ class PassageTextPartConnection(Connection):
             )
 
         data["children"] = self.get_children_metadata(start_obj)
+
+        passage = Passage(start_obj, end_obj)
+        data["human_reference"] = passage.human_readable_reference
+
         return camelize(data)
 
 
