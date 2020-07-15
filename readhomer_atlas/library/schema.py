@@ -69,7 +69,7 @@ class LimitedConnectionField(DjangoFilterConnectionField):
         )
 
 
-class PassageSiblingMetadataNode(ObjectType):
+class PassageSiblingsNode(ObjectType):
     # @@@ dry for resolving scalars
     all_siblings = generic.GenericScalar(
         name="all", description="Inclusive list of siblings for a passage"
@@ -100,7 +100,13 @@ class PassageSiblingMetadataNode(ObjectType):
 
 class PassageTextPartConnection(Connection):
     metadata = generic.GenericScalar()
-    sibling_metadata = Field(PassageSiblingMetadataNode)
+
+    human_reference = String()
+    ancestors = generic.GenericScalar()
+    siblings = Field(PassageSiblingsNode)
+    children = generic.GenericScalar()
+    next_passage = String(description="Next passage reference")
+    previous_passage = String(description="Previous passage reference")
 
     class Meta:
         abstract = True
@@ -150,23 +156,34 @@ class PassageTextPartConnection(Connection):
         return data
 
     def resolve_metadata(self, info, *args, **kwargs):
-        data = {}
-        # @@@ resolve metadata attrs individually
+        # @@@
+        return {}
+
+    def resolve_previous_passage(self, info, *args, **kwargs):
         passage = info.context.passage
-        data.update(
-            self.get_adjacent_passages(
-                passage.version, passage.previous_objects, passage.next_objects
-            )
-        )
-        data["human_reference"] = passage.human_readable_reference
+        if passage.previous_objects:
+            return self.generate_passage_urn(passage.version, passage.previous_objects)
 
-        data["ancestors"] = self.get_ancestor_metadata(passage.version, passage.start)
-        data["children"] = self.get_children_metadata(passage.start)
-        return camelize(data)
+    def resolve_next_passage(self, info, *args, **kwargs):
+        passage = info.context.passage
+        if passage.next_objects:
+            return self.generate_passage_urn(passage.version, passage.next_objects)
 
-    def resolve_sibling_metadata(self, info, *args, **kwargs):
+    def resolve_ancestors(self, info, *args, **kwargs):
+        passage = info.context.passage
+        return self.get_ancestor_metadata(passage.version, passage.start)
+
+    def resolve_siblings(self, info, *args, **kwargs):
         passage = info.context.passage
         return PassageSiblingMetadata(passage)
+
+    def resolve_children(self, info, *args, **kwargs):
+        passage = info.context.passage
+        return self.get_children_metadata(passage.start)
+
+    def resolve_human_reference(self, info, *args, **kwargs):
+        passage = info.context.passage
+        return passage.human_readable_reference
 
 
 # @@@ consider refactoring with TextPartsReferenceFilterMixin
