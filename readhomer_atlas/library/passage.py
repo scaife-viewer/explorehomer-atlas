@@ -1,7 +1,18 @@
+from .utils import extract_version_urn_and_ref, get_chunker
+
+
 class Passage:
-    def __init__(self, start, end=None):
-        self.start = start
-        self.end = end
+    def __init__(self, reference):
+        from .models import Node as TextPart
+
+        version_urn, ref = extract_version_urn_and_ref(reference)
+        try:
+            version = TextPart.objects.get(urn=version_urn)
+        except TextPart.DoesNotExist:
+            raise Exception(f"{version_urn} was not found.")
+
+        self.version = version
+        self.original_reference = reference
 
     @staticmethod
     def get_ranked_ancestors(obj):
@@ -44,12 +55,64 @@ class Passage:
             return " to ".join([start_fragment, end_fragment])
         return start_fragment
 
+    def initialize_start_and_end_objs(self):
+        refs = self.original_reference.rsplit(":", maxsplit=1)[1].split("-")
+        first_ref = refs[0]
+        last_ref = refs[-1]
+        if first_ref == last_ref:
+            start_obj = end_obj = self.version.get_descendants().get(ref=first_ref)
+        else:
+            start_obj = self.version.get_descendants().get(ref=first_ref)
+            end_obj = self.version.get_descendants().get(ref=last_ref)
+
+        self._start_obj = start_obj
+        self._end_obj = end_obj
+
+    @property
+    def start(self):
+        if not hasattr(self, "_start_obj"):
+            self.initialize_start_and_end_objs()
+        return getattr(self, "_start_obj")
+
+    @property
+    def end(self):
+        if not hasattr(self, "_end_obj"):
+            self.initialize_start_and_end_objs()
+        return getattr(self, "_end_obj")
+
+    def get_adjacent_text_parts(self, all_queryset, start_idx, count):
+        chunker = get_chunker(
+            all_queryset, start_idx, count, queryset_values=["idx", "urn", "ref"],
+        )
+        return chunker.get_prev_next_boundaries()
+
+    def initialize_refpart_siblings(self):
+        start_obj = self.start
+        end_obj = self.end
+
+        siblings_qs = start_obj.get_refpart_siblings(self.version)
+        start_idx = start_obj.idx
+        chunk_length = end_obj.idx - start_obj.idx + 1
+        self._previous_objects, self._next_objects = self.get_adjacent_text_parts(
+            siblings_qs, start_idx, chunk_length
+        )
+
+    @property
+    def previous_objects(self):
+        if not hasattr(self, "_previous_objects"):
+            self.initialize_refpart_siblings()
+        return getattr(self, "_previous_objects")
+
+    @property
+    def next_objects(self):
+        if not hasattr(self, "_next_objects"):
+            self.initialize_refpart_siblings()
+        return getattr(self, "_next_objects")
+
 
 class PassageSiblingMetadata:
-    def __init__(self, passage, previous_objects=None, next_objects=None):
+    def __init__(self, passage):
         self.passage = passage
-        self.previous_objects = previous_objects
-        self.next_objects = next_objects
 
     @staticmethod
     def get_siblings_in_range(siblings, start, end, field_name="idx"):
@@ -79,22 +142,24 @@ class PassageSiblingMetadata:
 
     @property
     def previous(self):
-        if self.previous_objects:
+        if self.passage.previous_objects:
             return list(
                 self.get_siblings_in_range(
                     self.all,
-                    self.previous_objects[0]["idx"],
-                    self.previous_objects[-1]["idx"],
+                    self.passage.previous_objects[0]["idx"],
+                    self.passage.previous_objects[-1]["idx"],
                 )
             )
         return []
 
     @property
     def next(self):
-        if self.next_objects:
+        if self.passage.next_objects:
             return list(
                 self.get_siblings_in_range(
-                    self.all, self.next_objects[0]["idx"], self.next_objects[-1]["idx"],
+                    self.all,
+                    self.passage.next_objects[0]["idx"],
+                    self.passage.next_objects[-1]["idx"],
                 )
             )
         return []

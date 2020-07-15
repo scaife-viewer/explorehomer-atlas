@@ -23,7 +23,6 @@ from .passage import Passage, PassageSiblingMetadata
 from .utils import (
     extract_version_urn_and_ref,
     filter_via_ref_predicate,
-    get_chunker,
     get_textparts_from_passage_reference,
 )
 
@@ -125,12 +124,6 @@ class PassageTextPartConnection(Connection):
                 )
         return data
 
-    def get_adjacent_text_parts(self, all_queryset, start_idx, count):
-        chunker = get_chunker(
-            all_queryset, start_idx, count, queryset_values=["idx", "urn", "ref"],
-        )
-        return chunker.get_prev_next_boundaries()
-
     def get_adjacent_passages(self, version, previous_objects, next_objects):
         data = {}
         if previous_objects:
@@ -147,43 +140,9 @@ class PassageTextPartConnection(Connection):
             data.append({"lcp": lcp, "urn": tp.get("urn")})
         return data
 
-    def get_passage_instance(self, info):
-        if hasattr(self, "_passage_instance"):
-            return getattr(self, "_passage_instance")
-
-    def get_passage(self, info):
-        # @@@ memoize
-        if hasattr(self, "_passage_instance"):
-            return getattr(self, "_passage_instance")
-
-        # @@@ race condition
-        passage_dict = info.context.passage
-        if not passage_dict:
-            return
-
-        urn = passage_dict["urn"]
-        version = passage_dict["version"]
-
-        refs = urn.rsplit(":", maxsplit=1)[1].split("-")
-        first_ref = refs[0]
-        last_ref = refs[-1]
-        if first_ref == last_ref:
-            start_obj = end_obj = version.get_descendants().get(ref=first_ref)
-        else:
-            start_obj = version.get_descendants().get(ref=first_ref)
-            end_obj = version.get_descendants().get(ref=last_ref)
-
-        siblings_qs = start_obj.get_refpart_siblings(version)
-        start_idx = start_obj.idx
-        chunk_length = end_obj.idx - start_obj.idx + 1
-        previous_objects, next_objects = self.get_adjacent_text_parts(
-            siblings_qs, start_idx, chunk_length
-        )
-        return Passage(version, start_obj, end_obj, previous_objects, next_objects)
-
     def resolve_metadata(self, info, *args, **kwargs):
         data = {}
-        passage = self.get_passage(info)
+        passage = info.context.passage
         data.update(
             self.get_adjacent_passages(
                 passage.version, passage.previous_objects, passage.next_objects
@@ -201,7 +160,7 @@ class PassageTextPartConnection(Connection):
         return camelize(data)
 
     def resolve_sibling_metadata(self, info, *args, **kwargs):
-        passage = self.get_passage(info)
+        passage = info.context.passage
         return PassageSiblingMetadata(passage)
 
 
@@ -236,23 +195,15 @@ class TextPartFilterSet(django_filters.FilterSet):
         }
 
 
+def initialize_passage(request, reference):
+    # @@@ mimic how DataLoaders are using request == info.context
+    request.passage = Passage(reference)
+
+
 class TextPartsReferenceFilterMixin:
-    def _add_passage_to_context(self, reference):
-        # @@@ instance.request is an alias for info.context and used to store
-        # context data across filtersets
-        self.request.passage = dict(urn=reference)
-
-        version_urn, ref = extract_version_urn_and_ref(reference)
-        try:
-            version = TextPart.objects.get(urn=version_urn)
-        except TextPart.DoesNotExist:
-            raise Exception(f"{version_urn} was not found.")
-
-        self.request.passage["version"] = version
-
     def get_lowest_textparts_queryset(self, value):
-        self._add_passage_to_context(value)
-        version = self.request.passage["version"]
+        initialize_passage(self.request, value)
+        version = self.request.passage.version
         return get_textparts_from_passage_reference(value, version=version)
 
 
@@ -372,7 +323,7 @@ class TextAlignmentChunkFilterSet(
         textparts_queryset = self.get_lowest_textparts_queryset(value)
         start = textparts_queryset.first()
         end = textparts_queryset.last()
-        version = self.request.passage["version"]
+        version = self.request.passage.version
         return (
             queryset.filter(version=version)
             .filter(end__idx__gte=start.idx)
