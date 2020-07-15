@@ -71,10 +71,19 @@ class LimitedConnectionField(DjangoFilterConnectionField):
 
 class PassageSiblingMetadataNode(ObjectType):
     # @@@ dry for resolving scalars
-    all_siblings = generic.GenericScalar(name="all")
-    selected = generic.GenericScalar()
-    previous = generic.GenericScalar()
-    next_siblings = generic.GenericScalar(name="next")
+    all_siblings = generic.GenericScalar(
+        name="all", description="Inclusive list of siblings for a passage"
+    )
+    selected = generic.GenericScalar(
+        description="Only the selected sibling objects for a given passage"
+    )
+    previous = generic.GenericScalar(description="Siblings for the previous passage")
+    next_siblings = generic.GenericScalar(
+        name="next", description="Siblings for the next passage"
+    )
+
+    class Meta:
+        description = "Provides lists of sibling objects for a given passage"
 
     def resolve_all_siblings(obj, info, **kwargs):
         return obj.all
