@@ -142,6 +142,7 @@ class PassageTextPartConnection(Connection):
 
     def resolve_metadata(self, info, *args, **kwargs):
         data = {}
+        # @@@ resolve metadata attrs individually
         passage = info.context.passage
         data.update(
             self.get_adjacent_passages(
@@ -150,13 +151,8 @@ class PassageTextPartConnection(Connection):
         )
         data["human_reference"] = passage.human_readable_reference
 
-        # @@@ resolve metadata.siblings|ancestors|children individually
         data["ancestors"] = self.get_ancestor_metadata(passage.version, passage.start)
-
-        data["siblings"] = PassageSiblingMetadata(passage).all
-
         data["children"] = self.get_children_metadata(passage.start)
-
         return camelize(data)
 
     def resolve_sibling_metadata(self, info, *args, **kwargs):
