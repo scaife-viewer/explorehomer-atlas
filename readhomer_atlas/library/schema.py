@@ -103,14 +103,14 @@ class PassageTextPartConnection(Connection):
                 )
         return data
 
-    def get_adjacent_passages(self, version, all_queryset, start_idx, count):
-        data = {}
-
+    def get_adjacent_text_parts(self, all_queryset, start_idx, count):
         chunker = get_chunker(
-            all_queryset, start_idx, count, queryset_values=["idx", "urn", "ref"]
+            all_queryset, start_idx, count, queryset_values=["idx", "urn", "ref"],
         )
-        previous_objects, next_objects = chunker.get_prev_next_boundaries()
+        return chunker.get_prev_next_boundaries()
 
+    def get_adjacent_passages(self, version, previous_objects, next_objects):
+        data = {}
         if previous_objects:
             data["previous"] = self.generate_passage_urn(version, previous_objects)
 
@@ -118,12 +118,18 @@ class PassageTextPartConnection(Connection):
             data["next"] = self.generate_passage_urn(version, next_objects)
         return data
 
-    def get_sibling_metadata(self, version, text_part):
+    @staticmethod
+    def get_siblings_in_range(siblings, start, end, field_name="idx"):
+        for sibling in siblings:
+            if sibling[field_name] >= start and sibling[field_name] <= end:
+                yield sibling
+
+    def get_sibling_metadata(self, version, text_part, end_text_part):
         text_part_siblings = text_part.get_siblings()
         data = []
-        for tp in text_part_siblings.values("ref", "urn"):
+        for tp in text_part_siblings.values("ref", "urn", "idx"):
             lcp = tp["ref"].split(".").pop()
-            data.append({"lcp": lcp, "urn": tp.get("urn")})
+            data.append({"lcp": lcp, "urn": tp.get("urn"), "idx": tp["idx"]})
         if len(data) == 1:
             # don't return
             data = []
@@ -155,15 +161,41 @@ class PassageTextPartConnection(Connection):
             end_obj = version.get_descendants().get(ref=last_ref)
 
         data = {}
+
         siblings_qs = start_obj.get_refpart_siblings(version)
         start_idx = start_obj.idx
         chunk_length = end_obj.idx - start_obj.idx + 1
-        data.update(
-            self.get_adjacent_passages(version, siblings_qs, start_idx, chunk_length)
+        previous_objects, next_objects = self.get_adjacent_text_parts(
+            siblings_qs, start_idx, chunk_length
         )
 
+        data.update(self.get_adjacent_passages(version, previous_objects, next_objects))
+
         data["ancestors"] = self.get_ancestor_metadata(version, start_obj)
-        data["siblings"] = self.get_sibling_metadata(version, start_obj)
+
+        # @@@ consider siblings_metadata key for computational efficency
+        text_part_siblings = self.get_sibling_metadata(version, start_obj, end_obj)
+        selected_siblings = self.get_siblings_in_range(
+            text_part_siblings, start_obj.idx, end_obj.idx
+        )
+        data["siblings"] = text_part_siblings
+        data["selected_siblings"] = self.get_siblings_in_range(
+            text_part_siblings, start_obj.idx, end_obj.idx
+        )
+
+        # @@@ DDN for previous / next siblings; sort of like GetPassagePlus from CapiTainS
+        # Not sure yet if we want this bundled or in its own endpoint
+        if previous_objects:
+            data["previous_siblings"] = self.get_siblings_in_range(
+                text_part_siblings,
+                previous_objects[0]["idx"],
+                previous_objects[-1]["idx"],
+            )
+        if next_objects:
+            data["next_siblings"] = self.get_siblings_in_range(
+                text_part_siblings, next_objects[0]["idx"], next_objects[-1]["idx"]
+            )
+
         data["children"] = self.get_children_metadata(start_obj)
         return camelize(data)
 
