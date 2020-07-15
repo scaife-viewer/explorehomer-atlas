@@ -1,18 +1,10 @@
+from .models import Node as TextPart
 from .utils import extract_version_urn_and_ref, get_chunker
 
 
 class Passage:
     def __init__(self, reference):
-        from .models import Node as TextPart
-
-        version_urn, ref = extract_version_urn_and_ref(reference)
-        try:
-            version = TextPart.objects.get(urn=version_urn)
-        except TextPart.DoesNotExist:
-            raise Exception(f"{version_urn} was not found.")
-
-        self.version = version
-        self.original_reference = reference
+        self.reference = reference
 
     @staticmethod
     def get_ranked_ancestors(obj):
@@ -55,8 +47,22 @@ class Passage:
             return " to ".join([start_fragment, end_fragment])
         return start_fragment
 
+    def initialize_version(self):
+        version_urn, _ = extract_version_urn_and_ref(self.reference)
+        try:
+            version = TextPart.objects.get(urn=version_urn)
+        except TextPart.DoesNotExist:
+            raise Exception(f"{version_urn} was not found.")
+        self._version = version
+
+    @property
+    def version(self):
+        if not hasattr(self, "_version"):
+            self.initialize_version()
+        return getattr(self, "_version")
+
     def initialize_start_and_end_objs(self):
-        refs = self.original_reference.rsplit(":", maxsplit=1)[1].split("-")
+        refs = self.reference.rsplit(":", maxsplit=1)[1].split("-")
         first_ref = refs[0]
         last_ref = refs[-1]
         if first_ref == last_ref:
