@@ -19,7 +19,7 @@ from .models import (
     TextAnnotation,
     Token,
 )
-from .passage import Passage, PassageMetadata, PassageSiblingMetadata
+from .passage import PassageMetadata, PassageSiblingMetadata
 from .utils import (
     extract_version_urn_and_ref,
     filter_via_ref_predicate,
@@ -186,6 +186,7 @@ class TextPartFilterSet(django_filters.FilterSet):
 def initialize_passage(request, reference):
     # @@@ mimic how DataLoaders are using request == info.context
     from readhomer_atlas.library.backports.scaife_viewer.cts import passage_heal
+
     passage, healed = passage_heal(reference)
     request.passage = passage
     if healed:
