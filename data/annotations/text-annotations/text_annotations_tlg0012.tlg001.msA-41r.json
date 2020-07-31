@@ -53,7 +53,8 @@
     "dse": {
       "urn": "urn:cite2:hmt:va_dse.v1:schol1480",
       "image_roi": "urn:cite2:hmt:vaimg.2017a:VA041RN_0042@0.5603,0.5755,0.1923,0.040"
-    }
+    },
+    "references": []
   },
   {
     "urn": "urn:cts:greekLit:tlg5026.msA.hmt:2.797",
