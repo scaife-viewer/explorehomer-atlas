@@ -29,7 +29,8 @@
     "dse": {
       "urn": "urn:cite2:hmt:va_dse.v1:schol1442",
       "image_roi": "urn:cite2:hmt:vaimg.2017a:VA038VN_0540@0.2083,0.1514,0.619,0.0401"
-    }
+    },
+    "references": []
   },
   {
     "urn": "urn:cts:greekLit:tlg5026.msA.hmt:2.718",
