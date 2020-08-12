@@ -303,6 +303,22 @@ class TreeNode(ObjectType):
         return obj
 
 
+class TextAlignmentFilterSet(TextPartsReferenceFilterMixin, django_filters.FilterSet):
+    reference = django_filters.CharFilter(method="reference_filter")
+
+    class Meta:
+        model = TextAlignment
+        fields = ["name", "slug"]
+
+    def reference_filter(self, queryset, name, value):
+        textparts_queryset = self.get_lowest_textparts_queryset(value)
+        # @@@ we may wish to further denorm relations to textparts
+        # OR query based on the version, rather than the passage reference
+        return queryset.filter(
+            text_alignment_chunks__relations__tokens__text_part__in=textparts_queryset
+        ).distinct()
+
+
 class TextAlignmentNode(DjangoObjectType):
     # @@@@ filter by the versions in a particular chunk
     metadata = generic.GenericScalar()
@@ -310,7 +326,7 @@ class TextAlignmentNode(DjangoObjectType):
     class Meta:
         model = TextAlignment
         interfaces = (relay.Node,)
-        filter_fields = ["name", "slug"]
+        filterset_class = TextAlignmentFilterSet
 
 
 class TextAlignmentChunkFilterSet(
@@ -454,6 +470,9 @@ class Query(ObjectType):
     # No passage_text_part endpoint available here like the others because we
     # will only support querying by reference.
     passage_text_parts = LimitedConnectionField(PassageTextPartNode)
+
+    text_alignment = relay.Node.Field(TextAlignmentNode)
+    text_alignments = LimitedConnectionField(TextAlignmentNode)
 
     text_alignment_chunk = relay.Node.Field(TextAlignmentChunkNode)
     text_alignment_chunks = LimitedConnectionField(TextAlignmentChunkNode)
