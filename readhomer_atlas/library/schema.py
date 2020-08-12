@@ -11,6 +11,7 @@ from graphene_django.utils import camelize
 from .models import (
     AudioAnnotation,
     ImageAnnotation,
+    MetricalAnnotation,
     NamedEntity,
     Node,
     TextAlignment,
@@ -19,7 +20,6 @@ from .models import (
     TextAnnotation,
     Token,
 )
-from .urn import URN
 from .utils import (
     extract_version_urn_and_ref,
     filter_alignments_by_textparts,
@@ -89,23 +89,23 @@ class PassageTextPartConnection(Connection):
         return f"{version.urn}{passage_ref}"
 
     def get_ancestor_metadata(self, version, obj):
-        # @@@ this is currently the "first" ancestor
-        # and we need to stop it at the version boundary for backwards
+        # @@@ we need to stop it at the version boundary for backwards
         # compatability with SV
         data = []
         if obj and obj.get_parent() != version:
-            ancestor_urn = obj.urn.rsplit(".", maxsplit=1)[0]
-            ancestor_ref = ancestor_urn.rsplit(":", maxsplit=1)[1]
-            data.append(
-                {
-                    # @@@ proper name for this is ref or position?
-                    "ref": ancestor_ref,
-                    "urn": ancestor_urn,
-                }
-            )
+            ancestor_refparts = obj.ref.split(".")[:-1]
+            for pos, part in enumerate(ancestor_refparts):
+                ancestor_ref = ".".join(ancestor_refparts[: pos + 1])
+                data.append(
+                    {
+                        # @@@ proper name for this is ref or position?
+                        "ref": ancestor_ref,
+                        "urn": f"{version.urn}{ancestor_ref}",
+                    }
+                )
         return data
 
-    def get_sibling_metadata(self, version, all_queryset, start_idx, count):
+    def get_adjacent_passages(self, version, all_queryset, start_idx, count):
         data = {}
 
         chunker = get_chunker(
@@ -120,18 +120,22 @@ class PassageTextPartConnection(Connection):
             data["next"] = self.generate_passage_urn(version, next_objects)
         return data
 
+    def get_sibling_metadata(self, version, text_part):
+        text_part_siblings = text_part.get_siblings()
+        data = []
+        for tp in text_part_siblings.values("ref", "urn"):
+            lcp = tp["ref"].split(".").pop()
+            data.append({"lcp": lcp, "urn": tp.get("urn")})
+        if len(data) == 1:
+            # don't return
+            data = []
+        return data
+
     def get_children_metadata(self, start_obj):
         data = []
         for tp in start_obj.get_children().values("ref", "urn"):
-            # @@@ denorm lsb
-            lsb = tp["ref"].rsplit(".", maxsplit=1)[-1]
-            data.append(
-                {
-                    # @@@ proper name is lsb or position
-                    "lsb": lsb,
-                    "urn": tp.get("urn"),
-                }
-            )
+            lcp = tp["ref"].split(".").pop()
+            data.append({"lcp": lcp, "urn": tp.get("urn")})
         return data
 
     def resolve_metadata(self, info, *args, **kwargs):
@@ -153,13 +157,15 @@ class PassageTextPartConnection(Connection):
             end_obj = version.get_descendants().get(ref=last_ref)
 
         data = {}
-        siblings_qs = start_obj.get_siblings()
+        siblings_qs = start_obj.get_refpart_siblings(version)
         start_idx = start_obj.idx
         chunk_length = end_obj.idx - start_obj.idx + 1
-        data["ancestors"] = self.get_ancestor_metadata(version, start_obj)
-        data["siblings"] = self.get_sibling_metadata(
-            version, siblings_qs, start_idx, chunk_length
+        data.update(
+            self.get_adjacent_passages(version, siblings_qs, start_idx, chunk_length)
         )
+
+        data["ancestors"] = self.get_ancestor_metadata(version, start_obj)
+        data["siblings"] = self.get_sibling_metadata(version, start_obj)
         data["children"] = self.get_children_metadata(start_obj)
         return camelize(data)
 
@@ -258,8 +264,20 @@ class VersionNode(AbstractTextPartNode):
 
     def resolve_metadata(obj, *args, **kwargs):
         metadata = obj.metadata
+        work = obj.get_parent()
+        text_group = work.get_parent()
+        # @@@ backport lang map
+        lang_map = {
+            "eng": "English",
+            "grc": "Greek",
+        }
         metadata.update(
-            {"work_urn": URN(metadata["first_passage_urn"]).up_to(URN.WORK)}
+            {
+                "work_label": work.label,
+                "text_group_label": text_group.label,
+                "lang": metadata["lang"],
+                "human_lang": lang_map[metadata["lang"]],
+            }
         )
         return camelize(metadata)
 
@@ -326,13 +344,51 @@ class TextAlignmentChunkRelationNode(DjangoObjectType):
         filter_fields = ["tokens__text_part__urn"]
 
 
+class TextAnnotationFilterSet(TextPartsReferenceFilterMixin, django_filters.FilterSet):
+    reference = django_filters.CharFilter(method="reference_filter")
+
+    class Meta:
+        model = TextAnnotation
+        fields = ["urn"]
+
+    def reference_filter(self, queryset, name, value):
+        textparts_queryset = self.get_lowest_textparts_queryset(value)
+        return queryset.filter(text_parts__in=textparts_queryset).distinct()
+
+
 class TextAnnotationNode(DjangoObjectType):
     data = generic.GenericScalar()
 
     class Meta:
         model = TextAnnotation
         interfaces = (relay.Node,)
+        filterset_class = TextAnnotationFilterSet
+
+
+class MetricalAnnotationNode(DjangoObjectType):
+    data = generic.GenericScalar()
+    metrical_pattern = String()
+
+    class Meta:
+        model = MetricalAnnotation
+        interfaces = (relay.Node,)
         filter_fields = ["urn"]
+
+
+class ImageAnnotationFilterSet(TextPartsReferenceFilterMixin, django_filters.FilterSet):
+    reference = django_filters.CharFilter(method="reference_filter")
+
+    class Meta:
+        model = ImageAnnotation
+        fields = ["urn"]
+
+    def reference_filter(self, queryset, name, value):
+        # Reference filters work at the lowest text parts, but we've chosen to
+        # apply the ImageAnnotation :: TextPart link at the folio level.
+
+        # Since individual lines are at the roi level, we query there.
+        textparts_queryset = self.get_lowest_textparts_queryset(value)
+        return queryset.filter(roi__text_parts__in=textparts_queryset).distinct()
 
 
 class ImageAnnotationNode(DjangoObjectType):
@@ -342,7 +398,7 @@ class ImageAnnotationNode(DjangoObjectType):
     class Meta:
         model = ImageAnnotation
         interfaces = (relay.Node,)
-        filter_fields = ["urn"]
+        filterset_class = ImageAnnotationFilterSet
 
 
 class AudioAnnotationNode(DjangoObjectType):
@@ -367,11 +423,25 @@ class TokenNode(DjangoObjectType):
         filterset_class = TokenFilterSet
 
 
-class NamedEntityNode(DjangoObjectType):
+class NamedEntityFilterSet(TextPartsReferenceFilterMixin, django_filters.FilterSet):
+    reference = django_filters.CharFilter(method="reference_filter")
+
     class Meta:
-        filter_fields = ["urn"]
+        model = NamedEntity
+        fields = ["urn", "kind"]
+
+    def reference_filter(self, queryset, name, value):
+        textparts_queryset = self.get_lowest_textparts_queryset(value)
+        return queryset.filter(tokens__text_part__in=textparts_queryset).distinct()
+
+
+class NamedEntityNode(DjangoObjectType):
+    data = generic.GenericScalar()
+
+    class Meta:
         model = NamedEntity
         interfaces = (relay.Node,)
+        filterset_class = NamedEntityFilterSet
 
 
 class Query(ObjectType):
@@ -393,6 +463,9 @@ class Query(ObjectType):
 
     text_annotation = relay.Node.Field(TextAnnotationNode)
     text_annotations = LimitedConnectionField(TextAnnotationNode)
+
+    metrical_annotation = relay.Node.Field(MetricalAnnotationNode)
+    metrical_annotations = LimitedConnectionField(MetricalAnnotationNode)
 
     image_annotation = relay.Node.Field(ImageAnnotationNode)
     image_annotations = LimitedConnectionField(ImageAnnotationNode)

@@ -27,15 +27,10 @@ class FolioImageAnnotationMixin:
         folio = Node.objects.get(urn=preferred_folio_urn(self.urn))
         return folio.image_annotations.first().urn
 
-    def get_absolute_url(self, body_format):
+    def get_absolute_url(self):
         url = reverse_lazy(
             "serve_web_annotation",
-            kwargs={
-                "urn": self.urn,
-                "annotation_kind": self.slug,
-                "idx": self.idx,
-                "format": body_format,
-            },
+            kwargs={"urn": self.urn, "annotation_kind": self.slug, "idx": self.idx},
         )
         return build_absolute_url(url)
 
@@ -184,49 +179,30 @@ class TranslationAlignmentGenerator(FolioBoundingBoxAnnotationMixin):
             references.append(f"{cite_version_urn}{ref}")
         return references
 
+    def get_textual_bodies(self):
+        bodies = [
+            {"type": "TextualBody", "language": "grc"},
+            {"type": "TextualBody", "language": "en"},
+        ]
+        for body, lines in zip(bodies, [self.greek_lines, self.english_lines]):
+            body["format"] = "text/plain"
+            body["value"] = self.as_html(lines)
+        return bodies
+
     @cached_property
-    def common_obj(self):
+    def obj(self):
         return {
             "@context": "http://www.w3.org/ns/anno.jsonld",
             "type": "Annotation",
+            "id": self.get_absolute_url(),
             "target": [
                 self.alignment_urn,
                 self.canvas_target_obj,
                 self.image_target_obj,
                 self.image_request_url,
             ],
+            "body": self.get_textual_bodies(),
         }
-
-    def get_textual_bodies(self, body_format):
-        bodies = [
-            {"type": "TextualBody", "language": "grc"},
-            {"type": "TextualBody", "language": "en"},
-        ]
-        if body_format == "text":
-            for body, lines in zip(bodies, [self.greek_lines, self.english_lines]):
-                body["format"] = "text/plain"
-                body["value"] = self.as_text(lines)
-        elif body_format == "html":
-            for body, lines in zip(bodies, [self.greek_lines, self.english_lines]):
-                body["format"] = "text/plain"
-                body["value"] = self.as_html(lines)
-        return bodies
-
-    def get_object_for_body_format(self, body_format):
-        obj = {
-            "body": self.get_textual_bodies(body_format),
-            "id": self.get_absolute_url(body_format),
-        }
-        obj.update(self.common_obj)
-        return obj
-
-    @property
-    def text_obj(self):
-        return self.get_object_for_body_format("text")
-
-    @property
-    def html_obj(self):
-        return self.get_object_for_body_format("html")
 
 
 class NamedEntitiesGenerator(FolioImageAnnotationMixin):
@@ -239,10 +215,10 @@ class NamedEntitiesGenerator(FolioImageAnnotationMixin):
         self.idx = named_entity["idx"]
 
     @property
-    def compound_obj(self):
+    def obj(self):
         work_label = "Venetus A"
         return {
-            "id": self.get_absolute_url("compound"),
+            "id": self.get_absolute_url(),
             "@context": [
                 "http://www.w3.org/ns/anno.jsonld",
                 # @@@ do we need this?
@@ -317,9 +293,9 @@ class AudioAnnotationsGenerator(FolioBoundingBoxAnnotationMixin):
         }
 
     @property
-    def compound_obj(self):
+    def obj(self):
         return {
-            "id": self.get_absolute_url("compound"),
+            "id": self.get_absolute_url(),
             "@context": "http://www.w3.org/ns/anno.jsonld",
             "type": "Annotation",
             "target": [
@@ -333,10 +309,9 @@ class AudioAnnotationsGenerator(FolioBoundingBoxAnnotationMixin):
 
 
 class WebAnnotationCollectionGenerator:
-    def __init__(self, generator_class, urn, objects, format):
+    def __init__(self, generator_class, urn, objects):
         self.generator_class = generator_class
         self.objects = objects
-        self.format = format
         self.urn = urn
         self.item_list = []
 
@@ -350,12 +325,7 @@ class WebAnnotationCollectionGenerator:
     def items(self):
         for obj in self.objects:
             wa = self.generator_class(self.urn, obj)
-            if self.format == "html":
-                self.append_to_item_list(wa.html_obj)
-            elif self.format == "text":
-                self.append_to_item_list(wa.text_obj)
-            elif self.format == "compound":
-                self.append_to_item_list(wa.compound_obj)
+            self.append_to_item_list(wa.obj)
         return self.item_list
 
 

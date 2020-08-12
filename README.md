@@ -219,9 +219,23 @@ level of `Version` nodes, maintaining the tree structure in the final payload.
 }
 ```
 
-## Text Alignments
+## Annotations
 
-### Sample Queries
+The annotations below are invoked by the `prepare_db` script.
+
+While developing new annotations or ingesting data in alternate formats,
+it can be helpful to run the annotation importer script in isolation
+from `prepare_db`:
+
+```python
+from readhomer_atlas import importers
+
+importers.text_annotations.import_text_annotations(reset=True)
+```
+
+### Text Alignments
+
+#### Sample Queries
 
 Get text alignment chunks for a given reference:
 ```
@@ -262,9 +276,9 @@ Get a version annotated with text alignment chunks:
 }
 ```
 
-## Text Annotations
+### Text Annotations
 
-### Sample Queries
+#### Sample Queries
 
 Retrieve text annotations
 ```
@@ -309,9 +323,9 @@ Retrieve text annotations for a given passage
 }
 ```
 
-## Audio Annotations
+### Audio Annotations
 
-### Sample Queries
+#### Sample Queries
 
 Retrieve audio annotations
 ```
@@ -354,10 +368,54 @@ Retrieve audio annotations for a given passage
 }
 ```
 
+### Metrical Annotations
 
-## Image Annotations
+#### Sample Queries
 
-### Sample Queries
+Retrieve metrical annotations
+```
+{
+  metricalAnnotations(first: 10) {
+    edges {
+      node {
+        urn
+        metricalPattern
+        textParts {
+          edges {
+            node {
+              urn
+            }
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+Retrieve metrical annotations for a given passage
+```
+{
+  passageTextParts(reference: "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1.1-1.2") {
+    edges {
+      node {
+        urn
+        metricalAnnotations {
+          edges {
+            node {
+              metricalPattern
+            }
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+### Image Annotations
+
+#### Sample Queries
 Retrieve image annotation applied to folios
 ```
 {
@@ -402,9 +460,9 @@ Retrieve text parts annotated with images
 }
 ```
 
-## Named Entities
+### Named Entities
 
-### Sample Queries
+#### Sample Queries
 Retrieve named entities
 ```
 {
@@ -447,6 +505,22 @@ Retrieve named entities for text part tokens
             }
           }
         }
+      }
+    }
+  }
+}
+```
+
+Retreive named entities given a passage reference
+```
+{
+  namedEntities(reference:"urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1.1-1.7") {
+    edges {
+      node {
+        id
+        title
+        description
+        url
       }
     }
   }

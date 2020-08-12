@@ -1,3 +1,4 @@
+import io
 import json
 import re
 from collections import defaultdict
@@ -143,6 +144,122 @@ class TextAnnotation(models.Model):
         self.text_parts.set(reference_objs)
 
 
+class MetricalAnnotation(models.Model):
+    # @@@ in the future, we may ingest any attributes into
+    # `data` and query via JSON
+    data = JSONField(default=dict, blank=True)
+
+    html_content = models.TextField()
+    short_form = models.TextField(
+        help_text='"|" indicates the start of a foot, ":" indicates a syllable boundary within a foot and "/" indicates a caesura.'
+    )
+
+    idx = models.IntegerField(help_text="0-based index")
+    text_parts = SortedManyToManyField(
+        "library.Node", related_name="metrical_annotations"
+    )
+
+    urn = models.CharField(max_length=255, blank=True, null=True)
+
+    @property
+    def metrical_pattern(self):
+        """
+        alias of foot_code; could be denormed if we need to query
+        """
+        return self.data["foot_code"]
+
+    @property
+    def line_num(self):
+        return self.data["line_num"]
+
+    @property
+    def foot_code(self):
+        return self.data["foot_code"]
+
+    @property
+    def line_data(self):
+        return self.data["line_data"]
+
+    def generate_html(self):
+        buffer = io.StringIO()
+        print(
+            f'        <div class="line {self.foot_code}" id="line-{self.line_num}" data-meter="{self.foot_code}">',
+            file=buffer,
+        )
+        print(f"          <div>", end="", file=buffer)
+        index = 0
+        for foot in self.foot_code:
+            if foot == "a":
+                syllables = self.line_data[index : index + 3]
+                index += 3
+            else:
+                syllables = self.line_data[index : index + 2]
+                index += 2
+            if syllables[0]["word_pos"] in [None, "r"]:
+                print("\n            ", end="", file=buffer)
+            print(f'<span class="foot">', end="", file=buffer)
+            for i, syllable in enumerate(syllables):
+                if i > 0 and syllable["word_pos"] in [None, "r"]:
+                    print("\n            ", end="", file=buffer)
+                syll_classes = ["syll"]
+                if syllable["length"] == "long":
+                    syll_classes.append("long")
+                if syllable["caesura"]:
+                    syll_classes.append("caesura")
+                if syllable["word_pos"] is not None:
+                    syll_classes.append(syllable["word_pos"])
+                syll_class_string = " ".join(syll_classes)
+                print(
+                    f'<span class="{syll_class_string}">{syllable["text"]}</span>',
+                    end="",
+                    file=buffer,
+                )
+            print(f"</span>", end="", file=buffer)
+        print(f"\n          </div>", file=buffer)
+        print(f"        </div>", file=buffer)
+        buffer.seek(0)
+        return buffer.read().strip()
+
+    def generate_short_form(self):
+        """
+        |μῆ:νιν :ἄ|ει:δε :θε|ὰ /Πη|λη:ϊ:ά|δεω :Ἀ:χι|λῆ:ος
+        """
+        index = 0
+        form = ""
+        for foot in self.foot_code:
+            if foot == "a":
+                syllables = self.line_data[index : index + 3]
+                index += 3
+            else:
+                syllables = self.line_data[index : index + 2]
+                index += 2
+            form += "|"
+            for i, syllable in enumerate(syllables):
+                if i > 0 and syllable["word_pos"] in [None, "r"]:
+                    form += " "
+                if syllable["caesura"]:
+                    form += "/"
+                elif i > 0:
+                    form += ":"
+                form += syllable["text"]
+        return form
+
+    def resolve_references(self):
+        if "references" not in self.data:
+            print(f'No references found [urn="{self.urn}"]')
+            return
+        desired_urns = set(self.data["references"])
+        reference_objs = list(Node.objects.filter(urn__in=desired_urns))
+        resolved_urns = set([r.urn for r in reference_objs])
+        delta_urns = desired_urns.symmetric_difference(resolved_urns)
+
+        if delta_urns:
+            print(
+                f'Could not resolve all references [urn="{self.urn}" unresolved_urns="{",".join(delta_urns)}"]'
+            )
+        self.text_parts.set(reference_objs)
+
+
 IMAGE_ANNOTATION_KIND_CANVAS = "canvas"
 IMAGE_ANNOTATION_KIND_CHOICES = ((IMAGE_ANNOTATION_KIND_CANVAS, "Canvas"),)
 
@@ -217,6 +334,7 @@ class Node(MP_Node):
     ref = models.CharField(max_length=255, blank=True, null=True)
     rank = models.IntegerField(blank=True, null=True)
     text_content = models.TextField(blank=True, null=True)
+    # @@@ we may want to furthe de-norm label from metadata
     metadata = JSONField(default=dict, blank=True, null=True)
 
     alphabet = settings.NODE_ALPHABET
@@ -225,8 +343,28 @@ class Node(MP_Node):
         return f"{self.kind}: {self.urn}"
 
     @property
-    def name(self):
-        return self.metadata.get("work_title")
+    def label(self):
+        return self.metadata.get("label", self.urn)
+
+    @property
+    def lsb(self):
+        """
+        An alias for lowest citation part, preserved for
+        backwards-comptability with scaife-viewer/scaife-viewer
+        https://github.com/scaife-viewer/scaife-viewer/blob/e6974b2835918741acca781c39f46fd79d5406c9/scaife_viewer/cts/passage.py#L58
+        """
+        return self.lowest_citabale_part
+
+    @property
+    def lowest_citable_part(self):
+        """
+        Returns the lowest part of the URN's citation
+
+        # @@@ may denorm this for performance
+        """
+        if not self.rank:
+            return None
+        return self.ref.split(".").pop()
 
     @classmethod
     def dump_tree(cls, root=None, up_to=None, to_camel=True):
@@ -272,28 +410,63 @@ class Node(MP_Node):
             index[path] = newobj
         return tree
 
+    def get_refpart_siblings(self, version):
+        """
+        Node.get_siblings assumes siblings at the same position in the Node
+        heirarchy.
+
+        Refpart siblings crosses over parent boundaries, e.g.
+        considers 1.611 and 2.1 as siblings.
+        """
+        if not self.rank:
+            return Node.objects.none()
+        return version.get_descendants().filter(rank=self.rank)
+
 
 class Token(models.Model):
     text_part = models.ForeignKey(
         "Node", related_name="tokens", on_delete=models.CASCADE
     )
 
-    value = models.CharField(max_length=255)
-
+    value = models.CharField(
+        max_length=255,
+        help_text="the tokenized value of a text part (usually whitespace separated)",
+    )
     # @@@ consider JSON or EAV to store / filter attrs
-    word_value = models.CharField(max_length=255, blank=True, null=True)
-    subref_value = models.CharField(max_length=255, blank=True, null=True)
-    uuid = models.CharField(max_length=255, blank=True, null=True)
-    lemma = models.CharField(max_length=255, blank=True, null=True)
-    gloss = models.CharField(max_length=255, blank=True, null=True)
+    word_value = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text="the normalized version of the value (no punctuation)",
+    )
+    subref_value = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text="the value for the CTS subreference targeting a particular token",
+    )
+    lemma = models.CharField(
+        max_length=255, blank=True, null=True, help_text="the lemma for the token value"
+    )
+    gloss = models.CharField(
+        max_length=255, blank=True, null=True, help_text="the interlinear gloss"
+    )
     part_of_speech = models.CharField(max_length=255, blank=True, null=True)
-    tag = models.CharField(max_length=255, blank=True, null=True)
+    tag = models.CharField(
+        max_length=255, blank=True, null=True, help_text="part-of-speech tag"
+    )
     case = models.CharField(max_length=255, blank=True, null=True)
     mood = models.CharField(max_length=255, blank=True, null=True)
-    named_entity = models.CharField(max_length=255, blank=True, null=True)
 
     position = models.IntegerField()
     idx = models.IntegerField(help_text="0-based index")
+
+    ve_ref = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text="a human-readable reference to the token via a virtualized exemplar",
+    )
 
     @staticmethod
     def get_word_value(value):
@@ -322,14 +495,14 @@ class Token(models.Model):
             subref_idx = idx[w]
             subref_value = f"{w}[{subref_idx}]"
 
+            position = pos + 1
             to_create.append(
                 cls(
                     text_part=text_part_node,
                     value=piece,
                     word_value=w,
-                    position=pos + 1,
-                    # @@@ not a true uuid
-                    uuid=f"t{text_part_node.ref}_{pos}",
+                    position=position,
+                    ve_ref=f"{text_part_node.ref}.t{position}",
                     idx=counters["token_idx"],
                     subref_value=subref_value,
                 )
@@ -346,6 +519,7 @@ class NamedEntity(models.Model):
     description = models.TextField(blank=True, null=True)
     kind = models.CharField(max_length=6, choices=constants.NAMED_ENTITY_KINDS)
     url = models.URLField(max_length=200)
+    data = JSONField(default=dict, blank=True)
 
     idx = models.IntegerField(help_text="0-based index", blank=True, null=True)
     urn = models.CharField(max_length=255, unique=True)

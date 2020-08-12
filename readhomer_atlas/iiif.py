@@ -5,7 +5,7 @@ from urllib.parse import quote_plus, unquote
 class IIIFResolver:
     BASE_URL = "https://image.library.jhu.edu/iiif/"
     # @@@ figure out what this actually is in IIIF spec terms
-    CANVAS_BASE_URL = "https://rosetest.library.jhu.edu/rosademo/iiif3/"
+    CANVAS_BASE_URL = "https://rosetest.library.jhu.edu/rosademo/iiif/"
     COLLECTION_SUBDIR = "homer/VA"
     iruri_kwargs = {
         "region": "full",
