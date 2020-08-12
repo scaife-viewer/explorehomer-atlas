@@ -157,7 +157,7 @@ def get_textparts_from_passage_reference(passage_reference, version):
     return filter_via_ref_predicate(queryset, predicate)
 
 
-def filter_alignments_by_textparts(textparts_qs, alignments_qs=None):
+def filter_alignment_chunks_by_textparts(textparts_qs, alignments_qs=None):
     if alignments_qs is None:
         alignments_qs = TextAlignmentChunk.objects.all()
     # @@@ review efficiency of this query

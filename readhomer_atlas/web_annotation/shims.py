@@ -3,7 +3,7 @@ from django.utils.functional import cached_property
 from ..library.models import AudioAnnotation, Node, TextAlignmentChunk, Token
 from ..library.utils import (
     extract_version_urn_and_ref,
-    filter_alignments_by_textparts,
+    filter_alignment_chunks_by_textparts,
     get_textparts_from_passage_reference,
 )
 from .utils import preferred_folio_urn
@@ -62,7 +62,7 @@ class AlignmentsShim(FolioShimBase):
         chunk_queryset = TextAlignmentChunk.objects.filter(
             alignment__slug="iliad-sentence-alignment"
         )
-        alignments = filter_alignments_by_textparts(
+        alignments = filter_alignment_chunks_by_textparts(
             textparts_queryset, chunk_queryset
         ).values(*fields)
         return list(alignments)

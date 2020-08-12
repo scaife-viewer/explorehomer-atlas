@@ -22,7 +22,7 @@ from .models import (
 )
 from .utils import (
     extract_version_urn_and_ref,
-    filter_alignments_by_textparts,
+    filter_alignment_chunks_by_textparts,
     filter_via_ref_predicate,
     get_chunker,
     get_textparts_from_passage_reference,
@@ -325,7 +325,7 @@ class TextAlignmentChunkFilterSet(
 
     def reference_filter(self, queryset, name, value):
         textparts_queryset = self.get_lowest_textparts_queryset(value)
-        return filter_alignments_by_textparts(textparts_queryset, queryset)
+        return filter_alignment_chunks_by_textparts(textparts_queryset, queryset)
 
 
 class TextAlignmentChunkNode(DjangoObjectType):
