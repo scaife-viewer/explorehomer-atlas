@@ -321,6 +321,7 @@ class TextAlignmentFilterSet(TextPartsReferenceFilterMixin, django_filters.Filte
 
 class TextAlignmentNode(DjangoObjectType):
     # @@@@ filter by the versions in a particular chunk
+    # @@@@ list versions
     metadata = generic.GenericScalar()
 
     class Meta:
@@ -344,12 +345,40 @@ class TextAlignmentChunkFilterSet(
         return filter_alignment_chunks_by_textparts(textparts_queryset, queryset)
 
 
+class TextAlignmentMetadataNode(ObjectType):
+    passage_references = generic.GenericScalar(
+        description="References for the passages being aligned"
+    )
+
+    def resolve_passage_references(self, info, *args, **kwargs):
+        references = []
+        if self["connection"].edges:
+            references.append(info.context.passage["urn"])
+            # @@@ hardcoded for now
+            references.append("urn:cts:greekLit:tlg0012.tlg001.perseus-eng3:1.1")
+        return references
+
+
+class TextAlignmentConnection(Connection):
+    metadata = Field(TextAlignmentMetadataNode)
+
+    class Meta:
+        abstract = True
+
+    def resolve_metadata(self, info, *args, **kwargs):
+        return {
+            "passage": info.context.passage,
+            "connection": self,
+        }
+
+
 class TextAlignmentChunkNode(DjangoObjectType):
     items = generic.GenericScalar()
 
     class Meta:
         model = TextAlignmentChunk
         interfaces = (relay.Node,)
+        connection_class = TextAlignmentConnection
         filterset_class = TextAlignmentChunkFilterSet
 
 
