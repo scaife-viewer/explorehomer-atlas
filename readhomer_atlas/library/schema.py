@@ -335,7 +335,7 @@ class TextAlignmentMetadataNode(ObjectType):
     def resolve_passage_references(self, info, *args, **kwargs):
         references = []
         if self["connection"].edges:
-            references.append(info.context.passage["urn"])
+            references.append(info.context.passage.reference)
             # @@@ hardcoded for now
             references.append("urn:cts:greekLit:tlg0012.tlg001.perseus-eng3:1.1")
         return references
