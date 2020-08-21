@@ -19,7 +19,7 @@ from .models import (
     TextAnnotation,
     Token,
 )
-from .passage import Passage, PassageMetadata, PassageSiblingMetadata
+from .passage import PassageMetadata, PassageSiblingMetadata
 from .utils import (
     extract_version_urn_and_ref,
     filter_via_ref_predicate,
@@ -105,6 +105,7 @@ class PassageMetadataNode(ObjectType):
     children = generic.GenericScalar()
     next_passage = String(description="Next passage reference")
     previous_passage = String(description="Previous passage reference")
+    healed_passage = String(description="Healed passage")
 
     def resolve_metadata(self, info, *args, **kwargs):
         # @@@
@@ -135,6 +136,9 @@ class PassageMetadataNode(ObjectType):
     def resolve_human_reference(self, info, *args, **kwargs):
         passage = info.context.passage
         return passage.human_readable_reference
+
+    def resolve_healed_passage(self, info, *args, **kwargs):
+        return getattr(info.context, "healed_passage_reference", None)
 
 
 class PassageTextPartConnection(Connection):
@@ -181,12 +185,18 @@ class TextPartFilterSet(django_filters.FilterSet):
 
 def initialize_passage(request, reference):
     # @@@ mimic how DataLoaders are using request == info.context
-    request.passage = Passage(reference)
+    from readhomer_atlas.library.backports.scaife_viewer.cts import passage_heal
+
+    passage, healed = passage_heal(reference)
+    request.passage = passage
+    if healed:
+        request.healed_passage_reference = passage.reference
+    return passage.reference
 
 
 class TextPartsReferenceFilterMixin:
     def get_lowest_textparts_queryset(self, value):
-        initialize_passage(self.request, value)
+        value = initialize_passage(self.request, value)
         version = self.request.passage.version
         return get_textparts_from_passage_reference(value, version=version)
 
