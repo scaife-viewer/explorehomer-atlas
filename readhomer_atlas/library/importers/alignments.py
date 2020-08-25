@@ -309,7 +309,6 @@ def sentence_alignment_fresh_start():
 
 
 def process_cex(path):
-    path = "data/annotations/text-alignments/raw/tlg0012.tlg001.word_alignment.cex"
     lookup = {}
     with open(path) as f:
         for line in f:
@@ -342,7 +341,11 @@ def process_cex(path):
 
     version_a = Node.objects.get(urn="urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:")
     version_b = Node.objects.get(urn="urn:cts:greekLit:tlg0012.tlg001.perseus-eng3:")
-    alignment = TextAlignment(name="Iliad Word Alignment", slug="iliad-word-alignment")
+    slug_fragment = os.path.basename(path).rsplit(".")[-2].split("_")[0]
+    alignment = TextAlignment(
+        name=f"Iliad {slug_fragment.title()} Alignment",
+        slug=f"iliad-{slug_fragment}-alignment",
+    )
     alignment.save()
     alignment.versions.set([version_a, version_b])
 

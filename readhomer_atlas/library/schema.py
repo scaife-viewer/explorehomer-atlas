@@ -304,6 +304,7 @@ class TextAlignmentFilterSet(TextPartsReferenceFilterMixin, django_filters.Filte
 class TextAlignmentNode(DjangoObjectType):
     # @@@@ filter by the versions in a particular chunk
     # @@@@ list versions
+    # @@@ renderer prop
     metadata = generic.GenericScalar()
 
     class Meta:

@@ -46,9 +46,14 @@ class Command(BaseCommand):
         importers.named_entities.apply_named_entities(reset=True)
 
         self.stdout.write("--[Loading alignments]--")
-        importers.alignments.import_alignments(reset=True)
+        # @@@ don't push the old alignments at all
+        # importers.alignments.import_alignments(reset=True)
 
         # @@@
         importers.alignments.process_cex(
             "data/annotations/text-alignments/raw/tlg0012.tlg001.word_alignment.cex"
+        )
+
+        importers.alignments.process_cex(
+            "data/annotations/text-alignments/raw/tlg0012.tlg001.sentence_alignment.cex"
         )
