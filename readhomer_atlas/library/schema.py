@@ -327,18 +327,52 @@ class TextAlignmentChunkFilterSet(
         return filter_alignment_chunks_by_textparts(textparts_queryset, queryset)
 
 
+# @@@ structure of these nested non-Django objects
+class TextAlignmentMetadata(dict):
+    def get_alignment(self, alignment_records):
+        if len(alignment_records):
+            return TextAlignment.objects.get(pk=alignment_records[0].alignment_id)
+
+    def get_passage_reference(self, version, text_parts_list):
+        refs = [text_parts_list[0].ref]
+        last_ref = text_parts_list[-1].ref
+        if last_ref not in refs:
+            refs.append(last_ref)
+        refpart = "-".join(refs)
+        return f"{version.urn}{refpart}"
+
+    @property
+    def passage_references(self):
+        # @@@ lhs vs rhs in play here?
+        references = []
+        alignment_records = list(self["alignment_records"])
+        if not alignment_records:
+            # @@@ revisit "empty" assumption
+            return references
+        # @@@ revisit passage assumption
+        references.append(self["passage"].reference)
+        # @@@ revisit position assumption
+        version_urn, ref = extract_version_urn_and_ref(self["passage"].reference)
+        alignment = self.get_alignment(alignment_records)
+        for version in alignment.versions.exclude(urn=version_urn):
+            text_parts = TextPart.objects.filter(urn__startswith=version.urn)
+            text_parts_list = list(
+                text_parts.filter(
+                    tokens__alignment_chunk_relations__alignment_chunk__in=alignment_records
+                ).distinct()
+            )
+            passage_reference = self.get_passage_reference(version, text_parts_list)
+            references.append(passage_reference)
+        return references
+
+
 class TextAlignmentMetadataNode(ObjectType):
     passage_references = generic.GenericScalar(
         description="References for the passages being aligned"
     )
 
     def resolve_passage_references(self, info, *args, **kwargs):
-        references = []
-        if self["connection"].edges:
-            references.append(info.context.passage.reference)
-            # @@@ hardcoded for now
-            references.append("urn:cts:greekLit:tlg0012.tlg001.perseus-eng3:1.1")
-        return references
+        return self.passage_references
 
 
 class TextAlignmentConnection(Connection):
@@ -348,10 +382,9 @@ class TextAlignmentConnection(Connection):
         abstract = True
 
     def resolve_metadata(self, info, *args, **kwargs):
-        return {
-            "passage": info.context.passage,
-            "connection": self,
-        }
+        return TextAlignmentMetadata(
+            **{"passage": info.context.passage, "alignment_records": self.iterable,}
+        )
 
 
 class TextAlignmentChunkNode(DjangoObjectType):
