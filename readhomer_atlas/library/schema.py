@@ -334,13 +334,24 @@ class TextAlignmentMetadata(dict):
         if len(alignment_records):
             return TextAlignment.objects.get(pk=alignment_records[0].alignment_id)
 
-    def get_passage_reference(self, version, text_parts_list):
+    def get_passage_reference(self, version_urn, text_parts_list):
         refs = [text_parts_list[0].ref]
         last_ref = text_parts_list[-1].ref
         if last_ref not in refs:
             refs.append(last_ref)
         refpart = "-".join(refs)
-        return f"{version.urn}{refpart}"
+        return f"{version_urn}{refpart}"
+
+    def generate_passage_reference(self, version_urn, tokens_qs):
+        tokens_list = list(tokens_qs.filter(text_part__urn__startswith=version_urn))
+        text_parts_list = list(
+            TextPart.objects.filter(tokens__in=tokens_list).distinct()
+        )
+        return {
+            "reference": self.get_passage_reference(version_urn, text_parts_list),
+            "start_idx": tokens_list[0].idx,
+            "end_idx": tokens_list[-1].idx,
+        }
 
     @property
     def passage_references(self):
@@ -350,20 +361,18 @@ class TextAlignmentMetadata(dict):
         if not alignment_records:
             # @@@ revisit "empty" assumption
             return references
-        # @@@ revisit passage assumption
-        references.append(self["passage"].reference)
+
+        tokens_qs = Token.objects.filter(
+            alignment_chunk_relations__alignment_chunk__in=alignment_records
+        )
+        alignment = self.get_alignment(alignment_records)
+        # # @@@ revisit passage assumption
+        # references.append(self["passage"].reference)
         # @@@ revisit position assumption
         version_urn, ref = extract_version_urn_and_ref(self["passage"].reference)
-        alignment = self.get_alignment(alignment_records)
+        references.append(self.generate_passage_reference(version_urn, tokens_qs))
         for version in alignment.versions.exclude(urn=version_urn):
-            text_parts = TextPart.objects.filter(urn__startswith=version.urn)
-            text_parts_list = list(
-                text_parts.filter(
-                    tokens__alignment_chunk_relations__alignment_chunk__in=alignment_records
-                ).distinct()
-            )
-            passage_reference = self.get_passage_reference(version, text_parts_list)
-            references.append(passage_reference)
+            references.append(self.generate_passage_reference(version.urn, tokens_qs))
         return references
 
 
