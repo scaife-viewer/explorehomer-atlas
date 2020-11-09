@@ -1,9 +1,8 @@
 import graphene
+import scaife_viewer.atlas.schema
 
-import readhomer_atlas.library.schema
 
-
-class Query(readhomer_atlas.library.schema.Query, graphene.ObjectType):
+class Query(scaife_viewer.atlas.schema.Query, graphene.ObjectType):
     # This class will inherit from multiple Queries
     # as we begin to add more apps to our project
     pass

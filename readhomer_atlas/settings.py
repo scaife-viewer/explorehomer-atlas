@@ -7,8 +7,18 @@ BASE_DIR = PACKAGE_ROOT
 
 DEBUG = bool(int(os.environ.get("DEBUG", "1")))
 
-DATABASES = {"default": {"ENGINE": "django.db.backends.sqlite3", "NAME": "db.sqlite3"}}
-
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": "db.sqlite3",
+        # @@@ this timeout may not be appropriate
+        # for all sites using scaife-viewer-atlas,
+        # but we will likely have an ATLAS specific
+        # database router / ingestion-specific
+        # config in the future anyways
+        "OPTIONS": {"timeout": 5 * 60},
+    }
+}
 ALLOWED_HOSTS = ["localhost"]
 if "HEROKU_APP_NAME" in os.environ:
     ALLOWED_HOSTS = ["*"]
@@ -127,11 +137,13 @@ INSTALLED_APPS = [
     # third party
     "corsheaders",
     "django_extensions",
+    "django_jsonfield_backport",
     "graphene_django",
     "treebeard",
+    # scaife_viewer
+    "scaife_viewer.atlas",
     # project
     "readhomer_atlas",
-    "readhomer_atlas.library",
     "readhomer_atlas.tocs",
     "readhomer_atlas.web_annotation",
 ]
@@ -177,16 +189,14 @@ GRAPHENE = {
     "RELAY_CONNECTION_MAX_LIMIT": None,
 }
 
-ATLAS_CONFIG = dict(
-    IN_MEMORY_PASSAGE_CHUNK_MAX=int(
-        os.environ.get("ATLAS_IN_MEMORY_PASSAGE_CHUNK_MAX", 2500)
-    )
-)
-
-NODE_ALPHABET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
-
 # @@@ review
 DEFAULT_HTTP_CACHE_DURATION = int(
     os.environ.get("DEFAULT_HTTP_CACHE_DURATION", 60 * 60)
 )
 DEFAULT_HTTP_PROTOCOL = os.environ.get("DEFAULT_HTTP_PROTOCOL", "http")
+
+SV_ATLAS_DB_LABEL = "default"  # NOTE: Ensures we pick up ATLAS pragma customizations on the default database
+SV_ATLAS_DATA_DIR = os.path.join(PROJECT_ROOT, "data")
+
+if "SV_ATLAS_INGESTION_CONCURRENCY" in os.environ:
+    SV_ATLAS_INGESTION_CONCURRENCY = int(os.environ["SV_ATLAS_INGESTION_CONCURRENCY"])
