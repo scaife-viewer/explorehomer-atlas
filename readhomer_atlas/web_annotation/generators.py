@@ -3,8 +3,9 @@ from django.shortcuts import Http404
 from django.urls import reverse_lazy
 from django.utils.functional import cached_property
 
+from scaife_viewer.atlas.models import ImageROI, Node
+
 from ..iiif import IIIFResolver
-from ..library.models import ImageROI, Node
 from .shortcuts import build_absolute_url
 from .utils import preferred_folio_urn
 

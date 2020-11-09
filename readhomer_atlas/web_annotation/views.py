@@ -5,7 +5,8 @@ from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy
 from django.views.decorators.cache import cache_page
 
-from ..library.models import ImageAnnotation, Node
+from scaife_viewer.atlas.models import ImageAnnotation, Node
+
 from .generators import (
     WebAnnotationCollectionGenerator,
     get_generator_for_kind,

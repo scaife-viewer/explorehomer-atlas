@@ -1,0 +1,22 @@
+[
+  {
+    "urn": "urn:cite2:scaife-viewer:alignment.v1:iliad-word-alignment",
+    "label": "Iliad Word Alignment",
+    "format": "ducat-cex",
+    "filename": "tlg0012.tlg001.word_alignment.cex",
+    "versions": [
+      "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:",
+      "urn:cts:greekLit:tlg0012.tlg001.perseus-eng3:"
+    ]
+  },
+  {
+    "urn": "urn:cite2:scaife-viewer:alignment.v1:iliad-sentence-alignment",
+    "label": "Iliad Sentence Alignment",
+    "format": "ducat-cex",
+    "filename": "tlg0012.tlg001.sentence_alignment.cex",
+    "versions": [
+      "urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:",
+      "urn:cts:greekLit:tlg0012.tlg001.perseus-eng3:"
+    ]
+  }
+]
