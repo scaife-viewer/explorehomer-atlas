@@ -1,7 +1,11 @@
-from django.db.models import Q
 from django.utils.functional import cached_property
 
-from scaife_viewer.atlas.models import AudioAnnotation, Node, Token
+from scaife_viewer.atlas.models import (
+    AudioAnnotation,
+    Node,
+    TextAlignmentRecord,
+    Token,
+)
 from scaife_viewer.atlas.utils import (
     extract_version_urn_and_ref,
     get_textparts_from_passage_reference,
@@ -57,11 +61,16 @@ class AlignmentsShim(FolioShimBase):
 
     def get_object_list(self, idx=None, fields=None):
         if fields is None:
-            fields = ["idx", "items", "citation"]
+            fields = [
+                "idx",
+                # FIXME: restore fields
+                # and fix up annotation bodies for alignments
+                # "items",
+                # "citation"
+            ]
         textparts_queryset = self.get_textparts_queryset()
-        # FIXME: Update TextAlignmentChunk for new data set
-        alignments = TextAlignmentChunk.objects.filter(
-            Q(start__in=textparts_queryset) | Q(end__in=textparts_queryset)
+        alignments = TextAlignmentRecord.objects.filter(
+            relations__tokens__text_part__in=textparts_queryset
         ).values(*fields)
         return list(alignments)
 
