@@ -1,0 +1,146 @@
+text_groups:
+  - urn: "urn:cts:greekLit:tlg0012:"
+    node_kind: "textgroup"
+    name:
+      - lang: "eng"
+        value: "Homer"
+    works:
+    - urn: 'urn:cts:greekLit:tlg0012.tlg001:'
+      group_urn: 'urn:cts:greekLit:tlg0012:'
+      node_kind: work
+      lang: grc
+      title:
+      - lang: eng
+        value: Iliad
+      versions:
+      - urn: 'urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:'
+        node_kind: version
+        version_kind: edition
+        lang: grc
+        first_passage_urn: urn:cts:greekLit:tlg0012.tlg001.perseus-grc2:1.1-1.7
+        citation_scheme:
+        - book
+        - line
+        label:
+        - lang: eng
+          value: Iliad (Greek Text of Munro & Allen)
+        description:
+        - lang: eng
+          value: Homer, creator; Monro, D. B. (David Binning), 1836-1905, creator; Monro,
+            D. B. (David Binning), 1836-1905, editor; Allen, Thomas W. (Thomas William),
+            b. 1862, editor
+      - urn: 'urn:cts:greekLit:tlg0012.tlg001.msA:'
+        format: cex
+        node_kind: version
+        version_kind: edition
+        lang: grc
+        first_passage_urn: urn:cts:greekLit:tlg0012.tlg001.msA:1.1-1.25
+        citation_scheme:
+        - book
+        - line
+        label:
+        - lang: eng
+          value: Iliad (Venetus A (Marciana 454 = 822)
+        description:
+        - lang: eng
+          value: The manuscript Marcianus Graecus Z. 454 [= 822], known to Homeric scholars
+            as the Venetus A, is the oldest complete text of the Iliad in existence.
+      - urn: 'urn:cts:greekLit:tlg0012.tlg001.msA-folios:'
+        format: cex
+        node_kind: version
+        version_kind: edition
+        lang: grc
+        first_passage_urn: urn:cts:greekLit:tlg0012.tlg001.msA-folios:12r.1.1-12r.1.25
+        citation_scheme:
+        - folio
+        - book
+        - line
+        label:
+        - lang: eng
+          value: Iliad (Venetus A (Marciana 454 = 822), folios
+        description:
+        - lang: eng
+          value: The manuscript Marcianus Graecus Z. 454 [= 822], known to Homeric scholars
+            as the Venetus A, is the oldest complete text of the Iliad in existence.
+      - urn: 'urn:cts:greekLit:tlg0012.tlg001.perseus-eng3:'
+        format: cex
+        node_kind: version
+        version_kind: translation
+        lang: eng
+        first_passage_urn: urn:cts:greekLit:tlg0012.tlg001.perseus-eng3:1.1-1.130
+        citation_scheme:
+        - book
+        - card
+        label:
+        - lang: eng
+          value: Iliad (English Translation by Murray)
+        description:
+        - lang: eng
+          value: Homer, creator; Murray, A. T. (Augustus Taber), 1866-1940, translator
+      - urn: 'urn:cts:greekLit:tlg0012.tlg001.perseus-eng4:'
+        format: cex
+        node_kind: version
+        version_kind: translation
+        lang: eng
+        first_passage_urn: urn:cts:greekLit:tlg0012.tlg001.perseus-eng4:1.1-1.160
+        citation_scheme:
+        - book
+        - card
+        label:
+        - lang: eng
+          value: Iliad (English Translation by Butler)
+        description:
+        - lang: eng
+          value: Homer, creator; Butler, Samuel, 1835-1902, translator
+    - urn: 'urn:cts:greekLit:tlg0012.tlg002:'
+      groupUrn: 'urn:cts:greekLit:tlg0012:'
+      node_kind: work
+      lang: grc
+      title:
+      - lang: eng
+        value: Odyssey
+      versions:
+      - urn: 'urn:cts:greekLit:tlg0012.tlg002.perseus-grc2:'
+        node_kind: version
+        version_kind: edition
+        lang: grc
+        first_passage_urn: urn:cts:greekLit:tlg0012.tlg002.perseus-grc2:1.1-1.10
+        citation_scheme:
+        - book
+        - line
+        label:
+        - lang: eng
+          value: Odyssey (Greek Text of Murray)
+        description:
+        - lang: eng
+          value: Homer, creator; Murray, A. T. (Augustus Taber), 1866-1940, editor
+      - urn: 'urn:cts:greekLit:tlg0012.tlg002.perseus-eng3:'
+        format: cex
+        node_kind: version
+        version_kind: edition
+        lang: eng
+        first_passage_urn: urn:cts:greekLit:tlg0012.tlg002.perseus-eng3:1.1-1.178
+        citation_scheme:
+        - book
+        - card
+        label:
+        - lang: eng
+          value: Odyssey (English Translation by Murray)
+        description:
+        - lang: eng
+          value: Homer, creator; Murray, A. T. (Augustus Taber), 1866-1940, translator
+      - urn: 'urn:cts:greekLit:tlg0012.tlg002.perseus-eng4:'
+        format: cex
+        node_kind: version
+        version_kind: edition
+        lang: eng
+        first_passage_urn: urn:cts:greekLit:tlg0012.tlg002.perseus-eng4:1.1-1.230
+        citation_scheme:
+        - book
+        - card
+        label:
+        - lang: eng
+          value: Odyssey (English Translation by Butler)
+        description:
+        - lang: eng
+          value: Homer, creator; Butler, Samuel, 1835-1902, translator
