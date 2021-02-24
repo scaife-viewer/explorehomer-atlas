@@ -89,6 +89,7 @@ class Command(BaseCommand):
                     importers.named_entities.apply_named_entities,
                 ),
                 ("Loading alignments", importers.alignments.process_alignments),
+                ("Loading dictionaries", importers.dictionaries.import_dictionaries),
             ],
         }
         self.do_stage(stage_2)
