@@ -107,7 +107,7 @@ Retrieve tokens via a text part URN:
     edges {
       node {
         value
-        uuid
+        veRef
         idx
         position
       }

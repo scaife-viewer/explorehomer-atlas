@@ -4,5 +4,5 @@ django-extensions==2.2.6
 django-querycount==0.7.0
 django==2.2.15
 gunicorn==20.0.0
-scaife-viewer-atlas @https://github.com/scaife-viewer/backend/archive/8bb7847f9ef0bcef802ee808d164f9a3fe6165d2.zip#subdirectory=atlas
+scaife-viewer-atlas @https://github.com/scaife-viewer/backend/archive/ac57a3d29fd372576c2049f5a8d7f3f6d4fb34a9.zip#subdirectory=atlas
 whitenoise==4.1.4
