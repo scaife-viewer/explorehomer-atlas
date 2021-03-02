@@ -1,4 +1,5 @@
 import os
+import sys
 
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
@@ -165,6 +166,11 @@ LOGGING = {
             "level": "ERROR",
             "filters": ["require_debug_false"],
             "class": "django.utils.log.AdminEmailHandler",
+        },
+        "console": {
+            "level": "INFO",
+            "class": "logging.StreamHandler",
+            "stream": sys.stdout
         }
     },
     "loggers": {
@@ -172,7 +178,11 @@ LOGGING = {
             "handlers": ["mail_admins"],
             "level": "ERROR",
             "propagate": True,
-        }
+        },
+        "scaife_viewer.atlas": {
+            "level": "INFO",
+            "handlers": ["console"],
+        },
     },
 }
 
