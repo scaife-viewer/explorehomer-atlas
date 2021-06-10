@@ -2,7 +2,7 @@ contexttimer==0.3.3
 django-cors-headers==3.1.1
 django-extensions==2.2.6
 django-querycount==0.7.0
-django==2.2.15
+django==2.2.24
 gunicorn==20.0.0
 scaife-viewer-atlas @https://github.com/scaife-viewer/backend/archive/2e4613f8b14c5d4cd79d45e638693b29eee1b894.zip#subdirectory=atlas
 whitenoise==4.1.4
